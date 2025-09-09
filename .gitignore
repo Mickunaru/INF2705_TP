@@ -39,3 +39,16 @@
 
 # debug information files
 *.dwo
+
+# builds
+build/
+
+# Visual Studio temporary files
+.vs/
+*.suo
+*.VC.db
+*.vcxproj.user
+*.ipch/
+
+# ImGui configuration
+imgui.ini
