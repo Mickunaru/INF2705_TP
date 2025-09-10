@@ -327,16 +327,58 @@ struct App : public OpenGLApplication
     }
 
     // TODO: Modifiez les types de vertices et elements pour votre besoin.
-    void generateNgon(void* vertices, void* elements, unsigned int side)
+    void generateNgon(std::vector<Vertex>* vertices, std::vector<GLuint>* elements, unsigned int side)
     {
         // TODO: Générez un polygone à N côtés (couramment appelé N-gon).
         //       Vous devez gérer les cas entre 5 et 12 côtés (pentagone, hexagone
         //       , etc.). Ceux-ci ont un rayon constant de 0.7.
         //       Chaque point possède une couleur (libre au choix).
         //       Vous devez minimiser le nombre de points et définir des indices
-        //       pour permettre la réutilisation.        
-
+        //       pour permettre la réutilisation.
         const float RADIUS = 0.7f;
+        const vec4 RED = { 1.f, 0.f, 0.f, 1.f };
+        const vec4 GREEN = { 0.f, 1.f, 0.f, 1.f };
+        const vec4 BLUE = { 0.f, 0.f, 1.f, 1.f };
+        const vec4 WHITE = { 1.f, 1.f, 1.f, 1.f };
+        const float angleInc = 2.f * M_PI / side;
+        *vertices = {};
+        *elements = {};
+
+        vertices->push_back({
+            { 0.f, 0.f, 0.f }, WHITE
+        });
+
+        for (int i = 0; i < side; i++) {
+            const float angle = i * angleInc;
+            const float x = RADIUS * cos(angle);
+            const float y = RADIUS * sin(angle);
+            vec4 color;
+            switch (i % 3) {
+            case 0:
+                color = RED;
+                break;
+            case 1:
+                color = GREEN;
+                break;
+            case 2:
+                color = BLUE;
+                break;
+            }
+
+            vertices->push_back({
+                {x, y, 0.f}, color
+            });
+
+            elements->push_back(0);
+            elements->push_back(i + 1);
+
+            if (i + 2 > side) {
+                elements->push_back(1);
+            }
+            else {
+                elements->push_back(i + 2);
+            }
+        }
     }
 
     void initShapeData()
@@ -380,19 +422,20 @@ struct App : public OpenGLApplication
         if (hasNumberOfSidesChanged)
         {
             oldNSide_ = nSide_;
-            // generateNgon(vertices_, elements_, nSide_);
+            generateNgon(&vertices_, &elements_, nSide_);
 
             // TODO: Le nombre de côtés a changé, la méthode App::generateNgon
             //       (que vous avez implémentée) a modifié les données sur le CPU.
             //       Ici, il faut envoyer les données à jour au GPU.
             //       Attention, il ne faut pas faire d'allocation/réallocation, on veut
             //       seulement mettre à jour les buffers actuels.
+            initShapeData();
         }
 
         // TODO: Dessin du polygone.
         glUseProgram(basicSP_);
         glBindVertexArray(vao_);
-        glDrawElements(GL_TRIANGLES, elements_.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLE_FAN, elements_.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 
@@ -513,12 +556,8 @@ private:
     static constexpr unsigned int MAX_N_SIDES = 12;
 
     // TODO: Modifiez les types de vertices_ et elements_ pour votre besoin.
-    std::vector<Vertex> vertices_ = {
-        {{-0.5f, -0.5f, 0.0f}, {1.f, 0.f, 0.f, 1.f}}, // bas-gauche rouge
-        {{ 0.5f, -0.5f, 0.0f}, {0.f, 1.f, 0.f, 1.f}}, // bas-droite vert
-        {{ 0.0f,  0.5f, 0.0f}, {0.f, 0.f, 1.f, 1.f}}  // haut bleu
-    };
-    std::vector<GLuint> elements_ = { 0, 1, 2 };
+    std::vector<Vertex> vertices_;
+    std::vector<GLuint> elements_;
 
     int nSide_, oldNSide_;
 
