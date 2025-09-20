@@ -13,7 +13,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <unordered_set>
 
 #include "happly.h"
 #include <imgui/imgui.h>
@@ -35,10 +34,8 @@ using namespace glm;
 //       Un format entrelacé est recommandé (ordonné par vertex au lieu par attribut).
 // struct ... { ... };
 struct VertexData {
-    vec3 position;
-    vec3 normal;
-    vec2 texCoords;
-    vec4 color;
+    glm::vec3 position;
+    glm::vec4 color;
 };
 
 struct App : public OpenGLApplication
@@ -71,17 +68,15 @@ struct App : public OpenGLApplication
         );
 
         // Config de base.
-
         // TODO: Initialisez la couleur de fond.
-        glClearColor(0.4f, 0.0f, 0.3f, 1.0f);
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-
-        // TODO: Partie 2: Activez le test de profondeur (GL_DEPTH_TEST) et
-        //       l'élimination des faces arrières (GL_CULL_FACE).
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
 
-        //glCreateProgram();
+        // TODO: Partie 2: Activez le test de profondeur (GL_DEPTH_TEST) et
+        //       l'élimination des faces arrières (GL_CULL_FACE).
+
         loadShaderPrograms();
 
         // Partie 1
@@ -131,6 +126,7 @@ struct App : public OpenGLApplication
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth buffers 
         // TODO: Partie 2: Ajoutez le nettoyage du tampon de profondeur.
 
+
         ImGui::Begin("Scene Parameters");
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
         ImGui::End();
@@ -145,26 +141,11 @@ struct App : public OpenGLApplication
     // Appelée lorsque la fenêtre se ferme.
     void onClose() override
     {
-        for (auto&& [type, shaderObjects] : shaderType_) {
-            for (auto&& shader : shaderObjects) {
-                // glDetachShader et glDeleteShader fonctionnent un peu comme des pointeurs intelligents : Le shader est concrètement supprimé seulement s'il n'est plus attaché à un programme. Sinon, il est marqué pour suppression mais pas supprimé tout de suite.
-                glDeleteShader(shader);
-                glDetachShader(basicSP_, shader);
-            }
-        }
-        shaderType_.clear();
-
-        // TODO: Libérez les ressources allouées (buffers, shaders, etc.).
-
-        glDeleteVertexArrays(sizeof(vertices_), &vao_);
-        glDeleteVertexArrays(sizeof(elements_), &ebo_);
-        //glDeleteShader(shader); // il faut faire un loop pour del toute les shaders
-        //glDetachShader(basicSP_, shader);
-        //basicSP_.deleteShaders();
-
         glDeleteProgram(basicSP_);
-        basicSP_ = 0;
-        glUseProgram(0);
+        glDeleteProgram(transformSP_);
+        glDeleteVertexArrays(1, &vao_);
+        glDeleteBuffers(1, &vbo_);
+        glDeleteBuffers(1, &ebo_);
     }
 
     // Appelée lors d'une touche de clavier.
@@ -284,10 +265,8 @@ struct App : public OpenGLApplication
 
         glShaderSource(shader, 1, &shaderSource, nullptr);
         glCompileShader(shader);
-  
-        glAttachShader(basicSP_, shader);
 
-        glLinkProgram(basicSP_); //Link avec le programme
+        App::checkShaderCompilingError("Shader", shader);
 
         return shader;
     }
@@ -301,25 +280,55 @@ struct App : public OpenGLApplication
         //       dans la console.
         //       Il est recommandé de détacher et de supprimer les shaders objects
         //       directement après la liaison.
-        //Creation program sil ny a pas
+        //Creation program s'il n'y a pas
         basicSP_ = glCreateProgram();
-
         // Partie 1 paths
         const char* COLOR_VERTEX_SRC_PATH = "./shaders/basic.vs.glsl";
         const char* COLOR_FRAGMENT_SRC_PATH = "./shaders/basic.fs.glsl";
-
+        
+        
         GLuint shaderVertex = loadShaderObject(GL_VERTEX_SHADER, COLOR_VERTEX_SRC_PATH);
         GLuint shaderFragment = loadShaderObject(GL_FRAGMENT_SHADER, COLOR_FRAGMENT_SRC_PATH);
 
-        checkProgramLinkingError("basicSP_shader_", basicSP_);
+        glAttachShader(basicSP_, shaderVertex);
+        glAttachShader(basicSP_, shaderFragment);
 
+        glLinkProgram(basicSP_); //Link avec le programme
+
+        App::checkProgramLinkingError("Shader Program Linking", basicSP_);
+
+        glDetachShader(basicSP_, shaderVertex);
+        glDetachShader(basicSP_, shaderFragment);
+        glDeleteShader(shaderVertex);
+        glDeleteShader(shaderFragment);
+        
         // Partie 2
         const char* TRANSFORM_VERTEX_SRC_PATH = "./shaders/transform.vs.glsl";
         const char* TRANSFORM_FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
+        transformSP_ = glCreateProgram();
+
+        GLuint transformShaderVertex = loadShaderObject(GL_VERTEX_SHADER, TRANSFORM_VERTEX_SRC_PATH);
+        GLuint transformShaderFragment = loadShaderObject(GL_FRAGMENT_SHADER, TRANSFORM_VERTEX_SRC_PATH);
+
+        glAttachShader(transformSP_, transformShaderVertex);
+        glAttachShader(transformSP_, transformShaderFragment);
+
+        glLinkProgram(transformSP_); //Link avec le programme
+
+        App::checkProgramLinkingError("Shader Program Linking", transformSP_);
+
+        glDetachShader(transformSP_, transformShaderVertex);
+        glDetachShader(transformSP_, transformShaderFragment);
+        glDeleteShader(transformShaderVertex);
+        glDeleteShader(transformShaderFragment);
 
         // TODO: Allez chercher les locations de vos variables uniform dans le shader
         //       pour initialiser mvpUniformLocation_ et car_.mvpUniformLocation,
         //       puis colorModUniformLocation_ et car_.colorModUniformLocation.
+        mvpUniformLocation_ = glGetUniformLocation(basicSP_, "mvp");
+        colorModUniformLocation_ = glGetUniformLocation(basicSP_, "colorMod");
+        car_.mvpUniformLocation = glGetUniformLocation(transformSP_, "mvp");
+        car_.colorModUniformLocation = glGetUniformLocation(transformSP_, "colorMod");
     }
 
     // TODO: Modifiez les types de vertices et elements pour votre besoin.
@@ -331,6 +340,7 @@ struct App : public OpenGLApplication
         //       Chaque point possède une couleur (libre au choix).
         //       Vous devez minimiser le nombre de points et définir des indices
         //       pour permettre la réutilisation.        
+
         const float RADIUS = 0.7f;
     }
 
@@ -345,24 +355,24 @@ struct App : public OpenGLApplication
         // TODO: Créez un vao et spécifiez le format des données dans celui-ci.
         //       N'oubliez pas de lier le ebo avec le vao et de délier le vao
         //       du contexte pour empêcher des modifications sur celui-ci.
-        glGenBuffers(1, &vbo_); //sommets -> vertices
         glGenVertexArrays(1, &vao_);
+        glGenBuffers(1, &vbo_); //sommets -> vertices
         glGenBuffers(1, &ebo_);//indices -> elements
 
         glBindVertexArray(vao_);
 
-        //VBO
+        
         glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_), vertices_, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(VertexData), vertices_.data(), GL_STATIC_DRAW);
 
-        //EBO
-        glBindBuffer(GL_ARRAY_BUFFER, ebo_);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(elements_), elements_, GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, elements_.size() * sizeof(GLuint), elements_.data(), GL_STATIC_DRAW);
 
         //Postion: 0
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, position));
         glEnableVertexAttribArray(0);
 
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, color));
         glEnableVertexAttribArray(1);
 
         glBindVertexArray(0); //Nettoyage VAO
@@ -379,19 +389,22 @@ struct App : public OpenGLApplication
         if (hasNumberOfSidesChanged)
         {
             oldNSide_ = nSide_;
-            // generateNgon(vertices_, elements_, nSide_);
+            //generateNgon(&vertices_, &elements_, nSide_);
 
             // TODO: Le nombre de côtés a changé, la méthode App::generateNgon
             //       (que vous avez implémentée) a modifié les données sur le CPU.
             //       Ici, il faut envoyer les données à jour au GPU.
             //       Attention, il ne faut pas faire d'allocation/réallocation, on veut
             //       seulement mettre à jour les buffers actuels.
+            //initShapeData();
         }
 
         // TODO: Dessin du polygone.
-        glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices_) / sizeof(GLfloat));
-        glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices_) / sizeof(GLfloat));
-        glDrawElements(GL_TRIANGLES, sizeof(elements_) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
+        glUseProgram(basicSP_);
+        glBindVertexArray(vao_);
+        //glBindVertexArray(vao_);
+        glDrawElements(GL_TRIANGLES, elements_.size(),GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
     }
 
     void drawStreetlights(glm::mat4& projView)
@@ -512,10 +525,12 @@ private:
     static constexpr unsigned int MAX_N_SIDES = 12;
 
     // TODO: Modifiez les types de vertices_ et elements_ pour votre besoin.
-    std::vector<VertexData> vertices_[MAX_N_SIDES + 1]; // sommets
-    std::vector<VertexData> elements_[MAX_N_SIDES * 3]; //indices
-
-    std::unordered_map<GLenum, std::unordered_set<GLuint>> shaderType_;
+    std::vector<VertexData> vertices_ = {
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}}, // bas-gauche rouge
+        {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 00.f, 1.0f}}, // bas-droite vert
+        {{ 0.0f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}  // haut bleu
+    };
+    std::vector<GLuint> elements_ = { 0, 1, 2 };
 
     int nSide_, oldNSide_;
 
