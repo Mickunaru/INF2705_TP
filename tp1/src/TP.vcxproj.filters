@@ -85,5 +85,8 @@
     <ClInclude Include="..\inf2705\utils.hpp">
       <Filter>Header Files\inf2705</Filter>
     </ClInclude>
+    <ClInclude Include="vertex.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -184,6 +184,7 @@
     <ClInclude Include="..\inf2705\OpenGLApplication.hpp" />
     <ClInclude Include="..\inf2705\sfml_utils.hpp" />
     <ClInclude Include="..\inf2705\utils.hpp" />
+    <ClInclude Include="vertex.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

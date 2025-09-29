@@ -1,8 +1,5 @@
 #pragma once
 
-#include <glbinding/gl/gl.h>
-#include <glm/glm.hpp>
-
 #include "model.hpp"
 
 class Car
@@ -14,7 +11,7 @@ public:
     
     void update(float deltaTime);
     
-    void draw(glm::mat4& projView);
+    void draw(glm::mat4& projView,GLuint& transformSP_);
     
 private:
     // TODO: Une division en méthodes a déjà été réalisée pour vous.
@@ -25,12 +22,12 @@ private:
     
     void drawFrame();
     
-    void drawWheel();
+    void drawWheel(glm::vec3 pos);
     void drawWheels();
     
-    void drawBlinker();
-    void drawLight();    
-    void drawHeadlight();
+    void drawBlinker(glm::vec3 pos);
+    void drawLight(glm::vec3 pos, bool backLight);
+    void drawHeadlight(glm::vec3 pos);
     void drawHeadlights();
     
 private:    
@@ -41,7 +38,8 @@ private:
     
 public:
     glm::vec3 position;
-    glm::vec2 orientation;    
+    glm::vec2 orientation;   
+    glm::mat4 projV;
     
     float speed;
     float wheelsRollAngle;
@@ -54,6 +52,7 @@ public:
     bool isBlinkerOn;
     float blinkerTimer;
     
+    GLuint transformSP;
     GLuint colorModUniformLocation;
     GLuint mvpUniformLocation;
 };

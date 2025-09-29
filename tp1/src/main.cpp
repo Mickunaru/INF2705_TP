@@ -1,31 +1,6 @@
-#include <cstddef>
-#include <cstdint>
-
-#include <array>
-#include <cmath>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <vector>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-
-#include "happly.h"
-#include <imgui/imgui.h>
-
-#include <inf2705/OpenGLApplication.hpp>
-
+#include "vertex.hpp"
 #include "model.hpp"
 #include "car.hpp"
-
-#define CHECK_GL_ERROR printGLError(__FILE__, __LINE__)
-
-using namespace gl;
-using namespace glm;
 
 // TODO: Il est fortement recommandé de définir quelques structs
 //       pour représenter les attributs.
@@ -33,10 +8,7 @@ using namespace glm;
 //       Cela facilitera l'utilisation et rendra votre code plus clair.
 //       Un format entrelacé est recommandé (ordonné par vertex au lieu par attribut).
 // struct ... { ... };
-struct VertexData {
-    glm::vec3 position;
-    glm::vec4 color;
-};
+
 
 struct App : public OpenGLApplication
 {
@@ -69,7 +41,7 @@ struct App : public OpenGLApplication
 
         // Config de base.
         // TODO: Initialisez la couleur de fond.
-        glClearColor(0.3f, 0.3f, 0.3f, 1);
+        glClearColor(0.5f, 0.3f, 0.7f, 1);
 
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
@@ -125,6 +97,7 @@ struct App : public OpenGLApplication
     void drawFrame() override
     {
         // TODO: Nettoyage de la surface de dessin.
+        glEnable(GL_DEPTH_TEST);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth buffers 
         // TODO: Partie 2: Ajoutez le nettoyage du tampon de profondeur.
 
@@ -310,7 +283,7 @@ struct App : public OpenGLApplication
         transformSP_ = glCreateProgram();
 
         GLuint transformShaderVertex = loadShaderObject(GL_VERTEX_SHADER, TRANSFORM_VERTEX_SRC_PATH);
-        GLuint transformShaderFragment = loadShaderObject(GL_FRAGMENT_SHADER, TRANSFORM_VERTEX_SRC_PATH);
+        GLuint transformShaderFragment = loadShaderObject(GL_FRAGMENT_SHADER, TRANSFORM_FRAGMENT_SRC_PATH);
 
         glAttachShader(transformSP_, transformShaderVertex);
         glAttachShader(transformSP_, transformShaderFragment);
@@ -327,8 +300,8 @@ struct App : public OpenGLApplication
         // TODO: Allez chercher les locations de vos variables uniform dans le shader
         //       pour initialiser mvpUniformLocation_ et car_.mvpUniformLocation,
         //       puis colorModUniformLocation_ et car_.colorModUniformLocation.
-        mvpUniformLocation_ = glGetUniformLocation(basicSP_, "mvp");
-        colorModUniformLocation_ = glGetUniformLocation(basicSP_, "colorMod");
+        mvpUniformLocation_ = glGetUniformLocation(transformSP_, "mvp");
+        colorModUniformLocation_ = glGetUniformLocation(transformSP_, "colorMod");
         car_.mvpUniformLocation = glGetUniformLocation(transformSP_, "mvp");
         car_.colorModUniformLocation = glGetUniformLocation(transformSP_, "colorMod");
     }
@@ -471,6 +444,39 @@ struct App : public OpenGLApplication
         //       Les nombres n'ont pas vraiment d'importance, libre à vous de les
         //       modifier, l'important est d'avoir les deux transformations
         //       indépendantes les unes des autres.
+
+        glUseProgram(transformSP_);
+        mat4 mvp;
+
+        static std::mt19937 rng(std::random_device{}());
+        static std::uniform_real_distribution<float> disX(10.0f, 20.0f);
+
+        static std::uniform_int_distribution<int> lightsCount(0, N_STREETLIGHTS);
+
+        static int ranLightCount = lightsCount(rng);
+
+        static float distX[N_STREETLIGHTS];
+        static float distZ[N_STREETLIGHTS];
+        static float distY[N_STREETLIGHTS];
+        static float lightRot[N_STREETLIGHTS];
+
+        static bool initialised = false;
+        if (!initialised) {
+            for (int i = 0; i < N_STREETLIGHTS; i++) {
+                distX[i] = disX(rng);
+                distZ[i] = -3.0f;
+                distY[i] = -0.15f;
+                lightRot[i] = 90.0f;
+            }
+            initialised = true;
+        }
+        for (int i = 0; i < ranLightCount; i++) {
+            mat4 lightModel = translate(mat4(1), { distX[i],distY[i],distZ[i] }) *
+                rotate(mat4(1), radians(lightRot[i]), { 0.0f,1.0f,0.0f });
+            mvp = projView * lightModel;
+            glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, &mvp[0][0]);
+            streetlight_.draw();
+        }
     }
 
     void drawTrees(glm::mat4& projView)
@@ -490,6 +496,47 @@ struct App : public OpenGLApplication
         //       Les nombres n'ont pas vraiment d'importance, libre à vous de les
         //       modifier, l'important est d'avoir les trois transformations
         //       indépendantes les unes des autres.
+        //glm::mat4 treeModelMatrices_[N_TREES];
+        
+        glUseProgram(transformSP_);
+        mat4 mvp;
+
+        static std::mt19937 rng(std::random_device{}());
+        static std::uniform_real_distribution<float> disX(5.0f, 11.0f);
+        static std::uniform_real_distribution<float> disZ(-9.0f, -7.0f);
+        static std::uniform_real_distribution<float> rotDist(0.0f, 2.0f*M_PI);
+        static std::uniform_real_distribution<float> scaleDist(0.6f, 1.2f);
+
+        static std::uniform_int_distribution<int> treeCount(0, N_TREES);
+
+        static int ranTreeCount = treeCount(rng);
+
+        static float distX[N_TREES];
+        static float distZ[N_TREES];
+        static float distY[N_TREES];
+        static float treeRot[N_TREES];
+        static float treeScale[N_TREES];
+
+        static bool initialised = false;
+        if (!initialised) {
+            for (int i = 0; i < N_TREES; i++) {
+                distX[i] = disX(rng);
+                distZ[i] = disZ(rng);
+                distY[i] = -0.15f;
+                treeRot[i] = rotDist(rng);
+                treeScale[i] = scaleDist(rng);
+            }
+            initialised = true;
+        }
+        for (int i = 0; i < ranTreeCount; i++) {
+            mat4 treeModel = translate(mat4(1), { distX[i],distY[i],distZ[i]}) *
+                rotate(mat4(1), treeRot[i], {0.0f,1.0f,0.0f}) *
+                scale(mat4(1), { treeScale[i],treeScale[i],treeScale[i]});
+            mvp = projView * treeModel;
+            glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, &mvp[0][0]);
+            tree_.draw();
+        }
+
     }
 
     void drawGround(glm::mat4& projView)
@@ -505,7 +552,20 @@ struct App : public OpenGLApplication
         //       unités et large de 50. Celui-ci doit aussi être légèrement en
         //       dessous de la route de 0.1.
         //       Boni: Que se passe-t-il s'il n'est pas déplacé? Comment expliquer
-        //       ce qui est visible?
+        //       ce qui est visible? Il va ecraser le street
+        glUseProgram(transformSP_);
+        mat4 mvp;
+
+        mat4 streetModel = translate(mat4(1), {0.0f,-0.01f,0.0f}) * scale(mat4(1), {100.0f,1.0f,5.0f});
+        mvp = projView* streetModel;
+        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, &mvp[0][0]);
+
+        street_.draw();
+
+        mat4 grassModel = translate(mat4(1), {0.0f, -0.1f, 0.0f}) * scale(mat4(1), {100.0f, 1.0f, 50.0f});
+        mvp = projView* grassModel;
+        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, &mvp[0][0]);
+        grass_.draw();
     }
 
     glm::mat4 getViewMatrix()
@@ -521,8 +581,21 @@ struct App : public OpenGLApplication
         //
         //       La caméra est placée à la position cameraPosition et orientée
         //       par les angles cameraOrientation (en radian).
+        mat4 m(1);
+        
+        // M
+        //m = translate(m, cameraPosition_);
+        //m = rotate(m, cameraOrientation_.x, { 1.f,0.f,0.f });      
+        //m = rotate(m, cameraOrientation_.y, { 0.f,1.f,0.f });
+        
+        //M^-1
+        m = rotate(m, -cameraOrientation_.x, { 1.f,0.f,0.f }); //pitch
+        m = rotate(m, -cameraOrientation_.y, { 0.f,1.f,0.f }); //heading
 
-        return glm::mat4(1.0);
+        //Translation inverse
+        m = translate(m, -cameraPosition_);
+  
+        return m; 
     }
 
     glm::mat4 getPerspectiveProjectionMatrix()
@@ -532,10 +605,18 @@ struct App : public OpenGLApplication
         //       Celle-ci aura un fov de 70 degrés, un near à 0.1 et un far à 100.
         //       Vous pouvez calculer le aspect ratio en utilisant la dimension de
         //       la fenêtre. Attention à la division entière.
-
         sf::Vector2u windowSize = window_.getSize();
 
-        return glm::mat4(1.0);
+        float aspectRatio = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
+
+        glm::mat4 projectionMatrix = glm::perspective(
+            glm::radians(70.0f), 
+            aspectRatio,
+            0.1f, 
+            100.0f
+        );
+
+        return projectionMatrix;
     }
 
     void sceneModels()
@@ -557,6 +638,19 @@ struct App : public OpenGLApplication
         // TODO: Dessin de la totalité de la scène graphique.
         //       On devrait voir la route, le gazon, les arbres, les lampadaires
         //       et la voiture. La voiture est contrôlable avec l'interface graphique.
+        glUseProgram(transformSP_);
+        const glm::vec3 DEFAULT_COLOR(1.0f, 1.0f, 1.0f);
+        glUniform3fv(colorModUniformLocation_, 1, &DEFAULT_COLOR[0]);
+
+        mat4 view = getViewMatrix();
+        mat4 proj = getPerspectiveProjectionMatrix();
+        mat4 projView = proj * view;
+
+        drawGround(projView);
+        drawTrees(projView);
+        drawStreetlights(projView);
+
+        car_.draw(projView, transformSP_);
     }
 
 private:
@@ -586,6 +680,7 @@ private:
     Model streetlight_;
     Model grass_;
     Model street_;
+    
 
     Car car_;
 

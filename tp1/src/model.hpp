@@ -1,8 +1,6 @@
 #pragma once
 
-#include <glbinding/gl/gl.h>
-
-using namespace gl;
+#include "vertex.hpp"
 
 class Model
 {
@@ -16,5 +14,8 @@ public:
 private:
     GLuint vao_, vbo_, ebo_;
     GLsizei count_;
+
+    std::vector<VertexData> vertices;
+    std::vector<GLuint> elements;
 };
 
