@@ -26,13 +26,6 @@
 using namespace gl;
 using namespace glm;
 
-// TODO: Il est fortement recommandé de définir quelques structs
-//       pour représenter les attributs.
-//       Faire de même pour représenter une vertex, qui est constitué d'attributs.
-//       Cela facilitera l'utilisation et rendra votre code plus clair.
-//       Un format entrelacé est recommandé (ordonné par vertex au lieu par attribut).
-// struct ... { ... };
-
 struct Vertex {
     glm::vec3 position;
     glm::vec4 color;
@@ -43,8 +36,8 @@ struct App : public OpenGLApplication
     App()
         : nSide_(5)
         , oldNSide_(0)
-        , cameraPosition_(0.f, 0.f, 0.f)
-        , cameraOrientation_(0.f, 0.f)
+        , cameraPosition_(-9.0f, 1.5f, 1.5f)
+        , cameraOrientation_(-10.f, -60.0f)
         , currentScene_(0)
         , isMouseMotionEnabled_(false)
     {
@@ -68,13 +61,7 @@ struct App : public OpenGLApplication
         );
 
         // Config de base.
-
-        // TODO: Initialisez la couleur de fond.
-        glClearColor(0.5f, 0.5f, 0.5f, 1);
-
-        // TODO: Partie 2: Activez le test de profondeur (GL_DEPTH_TEST) et
-        //       l'élimination des faces arrières (GL_CULL_FACE).
-
+        glClearColor(0.7f, 0.7f, 0.7f, 1);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         loadShaderPrograms();
@@ -84,8 +71,6 @@ struct App : public OpenGLApplication
 
         // Partie 2
         loadModels();
-
-        // TODO: Insérez les initialisations supplémentaires ici au besoin.
     }
 
 
@@ -122,8 +107,6 @@ struct App : public OpenGLApplication
     // Appelée à chaque trame. Le buffer swap est fait juste après.
     void drawFrame() override
     {
-        // TODO: Nettoyage de la surface de dessin.
-        // TODO: Partie 2: Ajoutez le nettoyage du tampon de profondeur.
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         ImGui::Begin("Scene Parameters");
@@ -140,7 +123,6 @@ struct App : public OpenGLApplication
     // Appelée lorsque la fenêtre se ferme.
     void onClose() override
     {
-        // TODO: Libérez les ressources allouées (buffers, shaders, etc.).
         glDeleteProgram(basicSP_);
         glDeleteProgram(transformSP_);
         glDeleteVertexArrays(1, &vao_);
@@ -254,10 +236,6 @@ struct App : public OpenGLApplication
 
     GLuint loadShaderObject(GLenum type, const char* path)
     {
-        // TODO: Chargement d'un shader object.
-        //       Utilisez readFile pour lire le fichier.
-        //       N'oubliez pas de vérifier les erreurs suite à la compilation
-        //       avec la méthode App::checkShaderCompilingError.
         GLuint shader = glCreateShader(type);
         std::string source = readFile(path);
         const char* source_cstr = source.c_str();
@@ -272,14 +250,6 @@ struct App : public OpenGLApplication
 
     void loadShaderPrograms()
     {
-        // TODO: Chargement des shader programs.
-        //       N'oubliez pas de vérifier les erreurs suite à la liaison (linking)
-        //       avec la méthode App::checkProgramLinkingError. Vous pouvez
-        //       donner un nom unique pour plus facilement lire les erreurs 
-        //       dans la console.
-        //       Il est recommandé de détacher et de supprimer les shaders objects
-        //       directement après la liaison.
-
         // Partie 1
         const char* COLOR_VERTEX_SRC_PATH = "./shaders/basic.vs.glsl";
         const char* COLOR_FRAGMENT_SRC_PATH = "./shaders/basic.fs.glsl";
@@ -316,44 +286,69 @@ struct App : public OpenGLApplication
         glDeleteShader(transformVertexShader);
         glDeleteShader(transformFragmentShader);
 
-        // TODO: Allez chercher les locations de vos variables uniform dans le shader
-        //       pour initialiser mvpUniformLocation_ et car_.mvpUniformLocation,
-        //       puis colorModUniformLocation_ et car_.colorModUniformLocation.
-
-        mvpUniformLocation_ = glGetUniformLocation(basicSP_, "mvp");
-        colorModUniformLocation_ = glGetUniformLocation(basicSP_, "colorMod");
+        basicMvpUniformLocation_ = glGetUniformLocation(basicSP_, "mvp");
+        basicColorModUniformLocation_ = glGetUniformLocation(basicSP_, "colorMod");
+        transformMvpUniformLocation_ = glGetUniformLocation(transformSP_, "mvp");
+        transformColorModUniformLocation_ = glGetUniformLocation(transformSP_, "colorMod");
         car_.mvpUniformLocation = glGetUniformLocation(transformSP_, "mvp");
         car_.colorModUniformLocation = glGetUniformLocation(transformSP_, "colorMod");
     }
 
-    // TODO: Modifiez les types de vertices et elements pour votre besoin.
-    void generateNgon(void* vertices, void* elements, unsigned int side)
+    void generateNgon(std::vector<Vertex>* vertices, std::vector<GLuint>* elements, unsigned int side)
     {
-        // TODO: Générez un polygone à N côtés (couramment appelé N-gon).
-        //       Vous devez gérer les cas entre 5 et 12 côtés (pentagone, hexagone
-        //       , etc.). Ceux-ci ont un rayon constant de 0.7.
-        //       Chaque point possède une couleur (libre au choix).
-        //       Vous devez minimiser le nombre de points et définir des indices
-        //       pour permettre la réutilisation.        
-
         const float RADIUS = 0.7f;
+        const vec4 RED = { 1.f, 0.f, 0.f, 1.f };
+        const vec4 GREEN = { 0.f, 1.f, 0.f, 1.f };
+        const vec4 BLUE = { 0.f, 0.f, 1.f, 1.f };
+        const vec4 WHITE = { 1.f, 1.f, 1.f, 1.f };
+        const float angleInc = 2.f * M_PI / side;
+        *vertices = {};
+        *elements = {};
+
+        vertices->push_back({
+            { 0.f, 0.f, 0.f }, WHITE
+        });
+
+        for (int i = 0; i < side; i++) {
+            const float angle = i * angleInc;
+            const float x = RADIUS * cos(angle);
+            const float y = RADIUS * sin(angle);
+            vec4 color;
+            switch (i % 3) {
+            case 0:
+                color = RED;
+                break;
+            case 1:
+                color = GREEN;
+                break;
+            case 2:
+                color = BLUE;
+                break;
+            }
+
+            vertices->push_back({
+                {x, y, 0.f}, color
+            });
+
+            elements->push_back(0);
+            elements->push_back(i + 1);
+
+            if (i + 2 > side) {
+                elements->push_back(1);
+            }
+            else {
+                elements->push_back(i + 2);
+            }
+        }
     }
 
     void initShapeData()
     {
-        // TODO: Initialisez les objets graphiques pour le dessin du polygone.
-        //       Ne passez aucune donnée pour le moment (déjà géré dans App::sceneShape),
-        //       on demande seulement de faire l'allocation de buffers suffisamment gros
-        //       pour contenir le polygone durant toute l'exécution du programme.
-        //       Réfléchissez bien à l'usage des buffers (paramètre de glBufferData).
         glGenBuffers(1, &vbo_);
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo_);
         glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(Vertex), vertices_.data(), GL_STATIC_DRAW);
 
-        // TODO: Créez un vao et spécifiez le format des données dans celui-ci.
-        //       N'oubliez pas de lier le ebo avec le vao et de délier le vao
-        //       du contexte pour empêcher des modifications sur celui-ci.
         glGenVertexArrays(1, &vao_);
         glGenBuffers(1, &ebo_);
 
@@ -380,102 +375,126 @@ struct App : public OpenGLApplication
         if (hasNumberOfSidesChanged)
         {
             oldNSide_ = nSide_;
-            // generateNgon(vertices_, elements_, nSide_);
-
-            // TODO: Le nombre de côtés a changé, la méthode App::generateNgon
-            //       (que vous avez implémentée) a modifié les données sur le CPU.
-            //       Ici, il faut envoyer les données à jour au GPU.
-            //       Attention, il ne faut pas faire d'allocation/réallocation, on veut
-            //       seulement mettre à jour les buffers actuels.
+            generateNgon(&vertices_, &elements_, nSide_);
+            initShapeData();
         }
 
-        // TODO: Dessin du polygone.
         glUseProgram(basicSP_);
         glBindVertexArray(vao_);
-        glDrawElements(GL_TRIANGLES, elements_.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLE_FAN, elements_.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 
     void drawStreetlights(glm::mat4& projView)
     {
-        // TODO: Dessin des lampadaires. Ceux-ci doivent être immobiles.
-        //
-        //       Ceux-ci ont des positions aléatoires.
-        //       Le long de la route, ils sont distancés les uns des autres de [10, 20].
-        //       La distance par rapport au bord de la route est de 0.5.
-        //       La hauteur est de -0.15 (un peu renfoncé dans le sol).
-        //
-        //       Ils sont toujours orientés de façon perpendiculaire à la route
-        //       pour "l'éclairer".
-        //
-        //       Les nombres n'ont pas vraiment d'importance, libre à vous de les
-        //       modifier, l'important est d'avoir les deux transformations
-        //       indépendantes les unes des autres.
+        if (!areStreetlightsInitialized_) {
+            const unsigned int SEED = 123;
+            std::mt19937 rng(SEED);
+
+            const float STREET_OFFSET = STREET_WIDTH / 2;
+
+            std::uniform_real_distribution<float> distMargin(10.0f, 20.0f);
+
+            float x = -MAP_SIZE / 2;
+            for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
+            {
+                x += distMargin(rng);
+                float y = -0.15f;
+                float z = 0.5f + STREET_OFFSET;
+                float angle = M_PI * 3 / 2;
+                glm::mat4 model(1);
+                model = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+                model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+                streetlightModelMatrices_[i] = model;
+            }
+            areStreetlightsInitialized_ = true;
+        }
+
+        for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
+        {
+            glm::mat4 streetlightMVP = projView * streetlightModelMatrices_[i];
+            glUniformMatrix4fv(transformMvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(streetlightMVP));
+            glUniform3f(transformColorModUniformLocation_, 1.0f, 1.0f, 1.0f);
+            streetlight_.draw();
+        }
     }
 
     void drawTrees(glm::mat4& projView)
     {
-        // TODO: Dessin des arbres. Ceux-ci doivent être immobiles.
-        //
-        //       Ceux-ci ont des positions aléatoires.
-        //       Le long de la route, ils sont distancés les uns des autres de [5, 11].
-        //       La distance par rapport au bord de la route est de [1.5, 3.5].
-        //       La hauteur est toujours de -0.15 (un peu renfoncé dans le sol).
-        //
-        //       Ils ont aussi une orientation aléatoire entre [0, 2pi].
-        //
-        //       Pour finir, ils ont une mise à l'échelle sur tous leurs axes
-        //       d'un facteur variant entre [0.6, 1.2].
-        //
-        //       Les nombres n'ont pas vraiment d'importance, libre à vous de les
-        //       modifier, l'important est d'avoir les trois transformations
-        //       indépendantes les unes des autres.
+        if (!areTreesInitialized_) {
+			const unsigned int SEED = 123;
+            std::mt19937 rng(SEED);
+
+            const float STREET_OFFSET = STREET_WIDTH / 2;
+
+            std::uniform_real_distribution<float> distMargin(5.0f, 11.0f);
+            std::uniform_real_distribution<float> distEdgePadding(1.5f + STREET_OFFSET, 3.5f + STREET_OFFSET);
+            std::uniform_real_distribution<float> distAngle(0.0f, 2.0f * M_PI);
+            std::uniform_real_distribution<float> distScale(0.6f, 1.2f);
+
+            float x = -MAP_SIZE / 2;
+            for (unsigned int i = 0; i < N_TREES; ++i)
+            {
+                x += distMargin(rng);
+                float y = -0.15f;
+                float z = -distEdgePadding(rng);
+                float angle = distAngle(rng);
+                float scale = distScale(rng);
+                glm::mat4 model(1);
+                model = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+                model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+                model = glm::scale(model, glm::vec3(scale));
+                treeModelMatrices_[i] = model;
+            }
+            areTreesInitialized_ = true;
+        }
+
+        for (unsigned int i = 0; i < N_TREES; ++i)
+        {
+            glm::mat4 treeMVP = projView * treeModelMatrices_[i];
+            glUniformMatrix4fv(transformMvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(treeMVP));
+            glUniform3f(transformColorModUniformLocation_, 1.0f, 1.0f, 1.0f);
+            tree_.draw();
+		}
     }
 
     void drawGround(glm::mat4& projView)
     {
-        // TODO: Dessin du sol.
-        //       
-        //       La route a seulement une mise à l'échelle pour être longue de
-        //       100 unités et large de 5 unités. Le modèle original est un
-        //       carré de 1 unité. La ligne jaune devrait traverser le long de
-        //       la route.
-        //
-        //       Le gazon a aussi une mise à l'échelle pour être long de 100
-        //       unités et large de 50. Celui-ci doit aussi être légèrement en
-        //       dessous de la route de 0.1.
-        //       Boni: Que se passe-t-il s'il n'est pas déplacé? Comment expliquer
-        //       ce qui est visible?
+        glm::mat4 streetModel = glm::scale(glm::mat4(1), glm::vec3(MAP_SIZE, 0.0f, STREET_WIDTH));
+        glm::mat4 streetMVP = projView * streetModel;
+        glUniformMatrix4fv(transformMvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(streetMVP));
+        glUniform3f(transformColorModUniformLocation_, 1.f, 1.0f, 1.0f);
+        street_.draw();
+
+        glm::mat4 grassModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
+        grassModel = glm::scale(grassModel, glm::vec3(MAP_SIZE, 1.0f, 50.0f));
+        glm::mat4 grassMVP = projView * grassModel;
+        glUniformMatrix4fv(transformMvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(grassMVP));
+        glUniform3f(transformColorModUniformLocation_, 1.0f, 1.0f, 1.0f);
+        grass_.draw();
     }
 
     glm::mat4 getViewMatrix()
     {
-        // TODO: Calculer la matrice de vue.
-        //
-        //       Vous n'avez pas le droit d'utiliser de fonction lookAt ou 
-        //       d'inversion de matrice. À la place, procéder en inversant
-        //       les opérations. N'oubliez pas que cette matrice est appliquée
-        //       aux éléments de la scène. Au lieu de déplacer la caméra 10
-        //       unités vers la gauche, on déplace le monde 10 unités vers la
-        //       droite.
-        //
-        //       La caméra est placée à la position cameraPosition et orientée
-        //       par les angles cameraOrientation (en radian).
-
-        return glm::mat4(1.0);
+        glm::mat4 view = glm::rotate(glm::mat4(1), -glm::radians(cameraOrientation_.x), glm::vec3(1.0f, 0.0f, 0.0f));
+        view = glm::rotate(view, -glm::radians(cameraOrientation_.y), glm::vec3(0.0f, 1.0f, 0.0f));
+        view = glm::translate(view, -cameraPosition_);
+        return view;
     }
 
     glm::mat4 getPerspectiveProjectionMatrix()
     {
-        // TODO: Calculer la matrice de projection.
-        //
-        //       Celle-ci aura un fov de 70 degrés, un near à 0.1 et un far à 100.
-        //       Vous pouvez calculer le aspect ratio en utilisant la dimension de
-        //       la fenêtre. Attention à la division entière.
-
         sf::Vector2u windowSize = window_.getSize();
 
-        return glm::mat4(1.0);
+        if (windowSize.y == 0) {
+            std::cerr << "Error: Division by zero is not allowed." << std::endl;
+            return mat4(1);
+        }
+        
+        float aspect = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
+        glm::mat4 projection = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 100.0f);
+
+        return projection;
     }
 
     void sceneModels()
@@ -494,17 +513,24 @@ struct App : public OpenGLApplication
         updateCameraInput();
         car_.update(deltaTime_);
 
-        // TODO: Dessin de la totalité de la scène graphique.
-        //       On devrait voir la route, le gazon, les arbres, les lampadaires
-        //       et la voiture. La voiture est contrôlable avec l'interface graphique.
+        glUseProgram(transformSP_);
+
+        glm::mat4 projView = getPerspectiveProjectionMatrix() * getViewMatrix();
+        drawGround(projView);
+        drawTrees(projView);
+
+		drawStreetlights(projView);
+        car_.draw(projView);
     }
 
 private:
     // Shaders
     GLuint basicSP_;
     GLuint transformSP_;
-    GLuint colorModUniformLocation_;
-    GLuint mvpUniformLocation_;
+    GLuint basicColorModUniformLocation_;
+    GLuint basicMvpUniformLocation_;
+    GLuint transformColorModUniformLocation_;
+    GLuint transformMvpUniformLocation_;
 
     // Partie 1
     GLuint vbo_, ebo_, vao_;
@@ -512,13 +538,8 @@ private:
     static constexpr unsigned int MIN_N_SIDES = 5;
     static constexpr unsigned int MAX_N_SIDES = 12;
 
-    // TODO: Modifiez les types de vertices_ et elements_ pour votre besoin.
-    std::vector<Vertex> vertices_ = {
-        {{-0.5f, -0.5f, 0.0f}, {1.f, 0.f, 0.f, 1.f}}, // bas-gauche rouge
-        {{ 0.5f, -0.5f, 0.0f}, {0.f, 1.f, 0.f, 1.f}}, // bas-droite vert
-        {{ 0.0f,  0.5f, 0.0f}, {0.f, 0.f, 1.f, 1.f}}  // haut bleu
-    };
-    std::vector<GLuint> elements_ = { 0, 1, 2 };
+    std::vector<Vertex> vertices_;
+    std::vector<GLuint> elements_;
 
     int nSide_, oldNSide_;
 
@@ -547,6 +568,11 @@ private:
     int currentScene_;
 
     bool isMouseMotionEnabled_;
+	bool areTreesInitialized_ = false;
+    bool areStreetlightsInitialized_ = false;
+
+	const float MAP_SIZE = 100.0f;
+	const float STREET_WIDTH = 5.0f;
 };
 
 

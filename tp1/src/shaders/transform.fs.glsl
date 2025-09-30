@@ -1,11 +1,12 @@
 #version 330 core
 
-// TODO: La couleur des fragments est donnée à partir de la couleur
-//       des vertices passée en entrée.
-//       De plus, une variable uniform permet de multiplier la couleur
-//       par une autre pour coloriser les fragments.
+uniform vec3 colorMod;
+
+in vec4 vertexColor;
+
+out vec4 fragColor;
 
 void main()
 {
-    
+    fragColor = vec4(vertexColor.rgb * colorMod, vertexColor.a);
 }
