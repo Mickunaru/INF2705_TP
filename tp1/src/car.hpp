@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 
 #include "model.hpp"
+#include <stack>
 
 class Car
 {   
@@ -23,15 +24,14 @@ private:
     //       Il sera important de penser à comment réutiliser le plus possible les matrices.
     //       Utilisez le passage par référence ou par copie pour vous aider.
     
-    void drawFrame();
+    void drawFrame(const glm::mat4& projView, const glm::mat4& carMatrix);
+    void drawWheel(const glm::mat4& projView, const glm::mat4& carMatrix, const glm::vec3& wheelPos, bool isFront, bool isLeft);
+    void drawWheels(const glm::mat4& projView, const glm::mat4& carMatrix);
     
-    void drawWheel();
-    void drawWheels();
-    
-    void drawBlinker();
-    void drawLight();    
-    void drawHeadlight();
-    void drawHeadlights();
+    void drawBlinker(const glm::mat4& projView, const glm::mat4& carMatrix, bool isLeftHeadlight);
+    void drawLight(const glm::mat4& projView, const glm::mat4& carMatrix, bool isFront, bool isLeft);
+    void drawHeadlight(const glm::mat4& projView, const glm::mat4& carMatrix, const glm::vec3& position, bool isFront, bool isLeft);
+    void drawHeadlights(const glm::mat4& projView, const glm::mat4& carMatrix);
     
 private:    
     Model frame_;

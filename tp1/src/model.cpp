@@ -1,15 +1,16 @@
 #include "model.hpp"
 
 #include "happly.h"
+#include <glm/glm.hpp>
 
 using namespace gl;
+using namespace glm;
 
-// TODO: Il est fortement recommandé de définir quelques structs
-//       pour représenter les attributs.
-//       Faire de même pour représenter une vertex, qui est constitué d'attributs.
-//       Cela facilitera l'utilisation et rendra votre code plus clair.
-//       Un format entrelacé est recommandé (ordonné par vertex au lieu par attribut).
-// struct ... { ... };
+struct Vertex {
+    glm::vec3 position;
+    glm::vec4 color;
+};
+
 
 void Model::load(const char* path)
 {
@@ -30,28 +31,64 @@ void Model::load(const char* path)
     // Les faces sont toutes des triangles dans nos modèles (donc 3 indices par face).
     std::vector<std::vector<unsigned int>> facesIndices = plyIn.getFaceIndices<unsigned int>();
     
-    // TODO: Rassemblez les propriétés du fichier .ply pour correspondre au
-    //       format de donnée souhaité (celui que vous avez défini dans la struct).
+    std::vector<Vertex> vertices;
+    vertices.reserve(positionX.size());
+
+    for (int i = 0; i < positionX.size(); i++) {
+        Vertex v;
+        v.position = { positionX[i], positionY[i], positionZ[i] };
+        if (colorRed.empty()) {
+            v.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+        }
+        else {
+            v.color = { colorRed[i] / 255.0f, colorGreen[i] / 255.0f, colorBlue[i] / 255.0f, 1.0f };
+        }
+        vertices.push_back(v);
+    }
     
-    // TODO: Rassemblez les indices dans un seul tableau contigu.
+    const unsigned int NUM_INDICES_PER_FACE = 3;
+    std::vector<unsigned int> indices;
+    indices.reserve(facesIndices.size() * NUM_INDICES_PER_FACE);
+
+    for (int i = 0; i < facesIndices.size(); i++) {
+        for (int j = 0; j < NUM_INDICES_PER_FACE; j++) {
+            indices.push_back(facesIndices[i][j]);
+        }
+    }
     
-    // TODO: Allocation des ressources sur la carte graphique et envoyer les
-    //       données traitées dans le vbo et ebo sur la carte graphique.
+    glGenVertexArrays(1, &vao_);
+    glBindVertexArray(vao_);
+
+    glGenBuffers(1, &vbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+
+    glGenBuffers(1, &ebo_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
     
-    // TODO: Créez un vao et spécifiez le format des données dans celui-ci.
-    //       N'oubliez pas de lier le ebo avec le vao et de délier le vao
-    //       du contexte pour empêcher des modifications sur celui-ci.
-    
-    // TODO: Initialisez count_, qui correspond au nombre d'indices à dessiner.
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+
+    glBindVertexArray(0);
+
+    count_ = indices.size();
 }
 
 Model::~Model()
 {
-    // TODO: Libérez les ressources allouées.
+    glDeleteVertexArrays(1, &vao_);
+    glDeleteBuffers(1, &vbo_);
+    glDeleteBuffers(1, &ebo_);
 }
 
 void Model::draw()
 {
-    // TODO: Dessin du modèle.
+    glBindVertexArray(vao_);
+    glDrawElements(GL_TRIANGLES, count_, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
 }
 
