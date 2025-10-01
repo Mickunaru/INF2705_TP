@@ -151,7 +151,9 @@ struct App : public OpenGLApplication
         
         // TODO:
         // Création des shaders program.
+        GLuint programObj = glCreateProgram();
         // Fait appel à la méthode "create()".
+        
         
         
         // TODO: À ajouter.
@@ -169,7 +171,9 @@ struct App : public OpenGLApplication
         //       
         //       Le mipmap __ne doit pas__ être activé pour toutes les textures, seulement le sol et la route.
         //
-       
+        GLint maxTexUnits = 0;
+        getGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxTexUnits);
+        std::cout << "Max texture units: " << maxTexUnits << std::endl;
         // Simplement pour réduire l'effet "négatif" du mipmap qui rend la
         // texture flou trop près.
 	    // streetTexture_.use();
