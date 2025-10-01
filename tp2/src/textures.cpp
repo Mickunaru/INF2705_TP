@@ -23,39 +23,8 @@ void Texture2D::load(const char* path)
     // TODO: Chargement de la texture en mémoire graphique.
     //       Attention au format des pixels de l'image!
     //       Toutes les variables devraient être utilisées (width, height, nChannels, data).
+    
     stbi_image_free(data);
-    //Faut inverser image verticalement pcq origin: x=0,y=0 avec convention SFML origine = haut-gauche
-    stbi_image_free.flipVertically();
-    
-    //Generer et lier un obj de texture
-    GLuint textID = 0;
-    glGenTextures(1, &texID);
-    glBindTexture(GL_TEXTURE_2D, texID);
-    // Mettre les donnees de l'image
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGBA,
-        stbi_image_free.getSize().x,
-        stbi_image_free.getSize().y,
-        stbi_image_free.getSize().z,
-        0,
-        GL_RGBA,
-        GL_UNSISIGNED_BYTE,
-        stbi_image_free.getPixelsPtr()
-
-        //generation de mipmaps
-        //mode de filtrage pour zoom out
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-        
-        // mode de filtrage pour zoom in
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        //generer automatiquement les mipmaps.
-        glGenerateMipMap(GL_TEXTURE_2D);
-    );
-
-    
 }
 
 Texture2D::~Texture2D()
@@ -73,12 +42,9 @@ void Texture2D::setWrap(GLenum wrapMode)
     // TODO: Configurer le wrap S et T avec le mode en paramètre.
 }
 
-void Texture2D::enableMipmap(const char* fileFormat, int nunLvls)
+void Texture2D::enableMipmap()
 {
     // TODO: Génère le mipmap et configure les paramètres pour l'utiliser.
-    GLuint textID = 0;
-    glGenTexture(1, &texID);
-    glBindTextur(GL_TEXTURE_2D, texID);
 }
 
 void Texture2D::use()

@@ -4,28 +4,8 @@
 #include "shaders.hpp"
 #include "textures.hpp"
 #include "uniform_buffer.hpp"
-#include "model.cpp"
 
-#include <cstddef>
-#include <cstdint>
 
-#include <array>
-#include <cmath>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <vector>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <SFML/Graphics.hpp>
-
-#include <OpenGLApplication.hpp>
-
-using namespace gl;
-using namespace glm;
 // Définition des structures pour la communication avec le shader. NE PAS MODIFIER.
 
 struct Material
@@ -153,9 +133,7 @@ struct App : public OpenGLApplication
         
         // TODO:
         // Création des shaders program.
-        GLuint programObj = glCreateProgram();
         // Fait appel à la méthode "create()".
-        
         
         
         // TODO: À ajouter.
@@ -173,9 +151,7 @@ struct App : public OpenGLApplication
         //       
         //       Le mipmap __ne doit pas__ être activé pour toutes les textures, seulement le sol et la route.
         //
-        GLint maxTexUnits = 0;
-        getGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxTexUnits);
-        std::cout << "Max texture units: " << maxTexUnits << std::endl;
+       
         // Simplement pour réduire l'effet "négatif" du mipmap qui rend la
         // texture flou trop près.
 	    // streetTexture_.use();

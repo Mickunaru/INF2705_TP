@@ -1,4 +1,7 @@
 #include "shader_program.hpp"
+
+#include <iostream>
+
 #include "utils.hpp"
 
 

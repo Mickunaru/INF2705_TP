@@ -1,5 +1,7 @@
 #include "shader_program.hpp"
 
+#include <glm/glm.hpp>
+
 // Implémentation de vos shaders ici.
 // Ils doivent hérité de ShaderProgram et implémenter les méthodes virtuelles pures
 // load() et getAllUniformLocations().

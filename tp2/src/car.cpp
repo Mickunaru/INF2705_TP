@@ -4,7 +4,6 @@
 #include <map>
 
 #include "shaders.hpp"
-#include "car.hpp"
 
 // À ajouter
 struct Material

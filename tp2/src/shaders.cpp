@@ -1,5 +1,8 @@
 #include "shaders.hpp"
 
+#include <glm/gtc/type_ptr.hpp>
+
+
 void EdgeEffect::load()
 {
     const char* VERTEX_SRC_PATH = "./shaders/edge.vs.glsl";
