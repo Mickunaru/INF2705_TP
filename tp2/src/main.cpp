@@ -22,6 +22,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <SFML/Graphics.hpp>
 
+#include <OpenGLApplication.hpp>
+
 using namespace gl;
 using namespace glm;
 // Définition des structures pour la communication avec le shader. NE PAS MODIFIER.
