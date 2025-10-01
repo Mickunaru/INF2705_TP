@@ -4,8 +4,26 @@
 #include "shaders.hpp"
 #include "textures.hpp"
 #include "uniform_buffer.hpp"
+#include "model.cpp"
 
+#include <cstddef>
+#include <cstdint>
 
+#include <array>
+#include <cmath>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <SFML/Graphics.hpp>
+
+using namespace gl;
+using namespace glm;
 // Définition des structures pour la communication avec le shader. NE PAS MODIFIER.
 
 struct Material

@@ -1,8 +1,5 @@
 #include "model.hpp"
-
 #include "happly.h"
-
-using namespace gl;
 
 
 // TODO: Nouvelle implémentation de Model::load() pour le chargement des nouveaux
@@ -10,6 +7,11 @@ using namespace gl;
 
 // TODO: Nouvelle définition de Model::load() à utiliser pour le sol et la route.
 //       À ajouter à votre classe actuelle.
+//class Model
+//{
+//public:
+//    void load(float* vertices, size_t verticesSize, unsigned int* elements, size_t elementsSize);
+//};
 
 struct PositionAttribute
 {
