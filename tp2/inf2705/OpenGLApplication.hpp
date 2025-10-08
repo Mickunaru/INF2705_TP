@@ -398,15 +398,15 @@ inline void printGLError(std::string_view sourceFile = "", int sourceLine = -1) 
 		{GL_TEXTURE_TOO_LARGE_EXT, "GL_TEXTURE_TOO_LARGE_EXT"},
 	};
 
-	if (not sourceFile.empty()) {
-		auto filename = std::filesystem::path(sourceFile).filename().string();
-		std::cerr << filename << "(" << sourceLine <<"): ";
-	}
-
 	while (true) {
 		GLenum errorCode = glGetError();
 		if (errorCode == GL_NO_ERROR)
 			break;
+
+		if (not sourceFile.empty()) {
+			auto filename = std::filesystem::path(sourceFile).filename().string();
+			std::cerr << filename << "(" << sourceLine << "): ";
+		}
 
 		auto& errorName = codeToName.at(errorCode);
 		std::cerr << "OpenGL Error 0x"<< std::hex << std::uppercase << std::setw(4) << std::setfill('0') << (int)errorCode << std::dec << ": " << errorName.data() << "\n";
