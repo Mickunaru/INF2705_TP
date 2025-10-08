@@ -175,8 +175,6 @@
     <None Include="CMakeLists.txt" />
     <None Include=".vscode\settings.json" />
     <None Include="README.md" />
-    <None Include="shaders\basic.fs.glsl" />
-    <None Include="shaders\basic.vs.glsl" />
     <None Include="shaders\transform.fs.glsl" />
     <None Include="shaders\transform.vs.glsl" />
   </ItemGroup>
