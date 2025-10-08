@@ -6,6 +6,11 @@
 #include "model.hpp"
 #include <stack>
 
+#include "uniform_buffer.hpp"
+
+class EdgeEffect;
+class CelShading;
+
 class Car
 {   
 public:
@@ -15,15 +20,12 @@ public:
     
     void update(float deltaTime);
     
-    void draw(glm::mat4& projView);
+    void draw(glm::mat4& projView, glm::mat4& view); // À besoin de la matrice de vue séparément, pour la partie 3.
+
+    void drawWindows(glm::mat4& projView, glm::mat4& view); // Dessin des vitres séparées.
     
 private:
-    // TODO: Une division en méthodes a déjà été réalisée pour vous.
-    //       Libre à vous de modifier (ou ajouter) les définitions (et surtout
-    //       d'ajouter des paramètres d'entrées). Procédez comme bon vous semble.
-    //       Il sera important de penser à comment réutiliser le plus possible les matrices.
-    //       Utilisez le passage par référence ou par copie pour vous aider.
-    
+    // TODO: Adapter les paramètres des méthodes privée ici au besoin, surtout pour la partie 3.  
     void drawFrame(const glm::mat4& projView, const glm::mat4& carMatrix);
     void drawWheel(const glm::mat4& projView, const glm::mat4& carMatrix, const glm::vec3& wheelPos, bool isFront, bool isLeft);
     void drawWheels(const glm::mat4& projView, const glm::mat4& carMatrix);
@@ -38,8 +40,10 @@ private:
     Model wheel_;
     Model blinker_;
     Model light_;
+    Model windows[6]; // Nouveaux modèles à ajouter.
     
 public:
+    glm::mat4 carModel;
     glm::vec3 position;
     glm::vec2 orientation;    
     
@@ -56,6 +60,10 @@ public:
     
     GLuint colorModUniformLocation;
     GLuint mvpUniformLocation;
+
+    EdgeEffect* edgeEffectShader;
+    CelShading* celShadingShader;
+    UniformBuffer* material;
 };
 
 

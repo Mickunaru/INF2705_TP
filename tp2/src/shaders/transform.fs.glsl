@@ -2,11 +2,11 @@
 
 uniform vec3 colorMod;
 
-in vec4 vertexColor;
+in vec3 vertexColor;
 
 out vec4 fragColor;
 
 void main()
 {
-    fragColor = vec4(vertexColor.rgb * colorMod, vertexColor.a);
+    fragColor = vec4(vertexColor.rgb * colorMod, 1.0);
 }
