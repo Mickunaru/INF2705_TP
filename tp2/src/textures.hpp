@@ -18,7 +18,7 @@ public:
 
 	void enableMipmap();
 
-	void use();
+	void use(GLenum mode);
 
 private:
 	GLuint m_id;
@@ -33,7 +33,7 @@ public:
 	
 	void load(const char** path);
 
-	void use();
+	void use(GLenum mode);
 
 private:
 	GLuint m_id;
