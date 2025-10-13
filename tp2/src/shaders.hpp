@@ -10,16 +10,16 @@
 // Voir exemple avec le shader du tp1, considérant les variables uniformes dans le shader:
 
 // Exemple, à retirer plus tard
-class TransformShader : public ShaderProgram
-{
-public:
-    GLuint mvpULoc;
-    GLuint colorModULoc;
-
-protected:
-    virtual void load() override;
-    virtual void getAllUniformLocations() override;
-};
+//class TransformShader : public ShaderProgram
+//{
+//public:
+//    GLuint mvpULoc;
+//    GLuint colorModULoc;
+//
+//protected:
+//    virtual void load() override;
+//    virtual void getAllUniformLocations() override;
+//};
 
 
 // TODO: Compléter ou ajouter ici bas:
@@ -57,7 +57,6 @@ public:
     GLuint nSpotLightsULoc;
     
     GLuint globalAmbientULoc;
-
 public:
     void setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model);
 
