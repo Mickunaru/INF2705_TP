@@ -54,6 +54,7 @@ Texture2D::~Texture2D()
 {
     // TODO: Libérer les ressources allouées.
     glDeleteTextures(1, &m_id);
+    m_id = 0;
 
 }
 
@@ -74,15 +75,18 @@ void Texture2D::setWrap(GLenum wrapMode)
 void Texture2D::enableMipmap()
 {
     // TODO: Génère le mipmap et configure les paramètres pour l'utiliser.
+    setWrap(GL_NEAREST_MIPMAP_LINEAR);
+    setWrap(GL_LINEAR);
     glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-void Texture2D::use()
+void Texture2D::use(GLenum mode)
 {
     // TODO: Met la texture active pour être utilisée dans les prochaines commandes de dessins.
-    setPixelData()
-
-    //getUseText
+    //setPixelData();
+    setFiltering(mode); // GL_LINEAR for smooth texturing
+    setWrap(mode); // GL_NEAREST for sharp/ pixelated texturing
+    
 }
 
 //
@@ -113,25 +117,26 @@ void TextureCubeMap::load(const char** pathes)
     // TODO: Chargement de la texture en mémoire graphique.
     //       Faites la configuration des min et mag filtering et du wrap S, T, R directement, ils
     //       ne seront pas modifiés ailleurs.
-    
-    for (unsigned int i = 0; i < 6; i++)
-    {
-        // TODO
-    }
-
-    for (unsigned int i = 0; i < 6; i++)
-    {
-        stbi_image_free(datas[i]);
-    }
 }
 
 TextureCubeMap::~TextureCubeMap()
 {
     // TODO: Libérer les ressources allouées.
+    glDeleteTextures(1, &m_id);
+    m_id = 0;
 }
 
-void TextureCubeMap::use()
+void TextureCubeMap::use(GLenum mode)
 {
     // TODO: Met la texture active pour être utilisée dans les prochaines commandes de dessins.
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mode);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mode);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, mode);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, mode);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, mode);
+    }
+    
 }
 
