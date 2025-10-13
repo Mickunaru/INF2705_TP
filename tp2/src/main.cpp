@@ -163,8 +163,9 @@ struct App : public OpenGLApplication
         // TODO:
         // Création des shaders program.
         // Fait appel à la méthode "create()".
-
-
+        celShadingShader_.create();
+        edgeEffectShader_.create();
+       
         // TODO: À ajouter.
         car_.edgeEffectShader = &edgeEffectShader_;
         car_.celShadingShader = &celShadingShader_;
@@ -180,12 +181,23 @@ struct App : public OpenGLApplication
         //       
         //       Le mipmap __ne doit pas__ être activé pour toutes les textures, seulement le sol et la route.
         //
+       
+        // Repeating Textures
+        grassTexture_.use(GL_LINEAR); // Repeats
+        streetTexture_.use(GL_LINEAR); // Repeats
+        streetlightTexture_.use(GL_LINEAR); // Repeats
+        streetlightLightTexture_.use(GL_NEAREST); //Repeats
+            // Pixelated    
+         treeTexture_.use(GL_NEAREST); //Repeats         
 
-        // Simplement pour réduire l'effet "négatif" du mipmap qui rend la
-        // texture flou trop près.
-        // streetTexture_.use();
-        // glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
+         // Non-repeating Textures
+         carTexture_.use(GL_LINEAR);
+            // Pixelated
+         carWindowTexture_.use(GL_NEAREST);
 
+         // Mip-map
+         grassTexture_.enableMipmap();
+         streetTexture_.enableMipmap();
 
         // TODO: Chargement des deux skyboxes.
 
@@ -206,6 +218,11 @@ struct App : public OpenGLApplication
             "../textures/skyboxNight/front.png",
             "../textures/skyboxNight/back.png",
         };
+        skyboxTexture_.load(pathes);
+        skyboxNightTexture_.load(nightPathes);
+
+        skyboxTexture_.use(GL_LINEAR);
+        skyboxNightTexture_.use(GL_LINEAR);
 
         loadModels();
         initStaticModelMatrices();
