@@ -13,8 +13,8 @@ public:
 	
 	void load(const char* path);
 	
-	void setFiltering(GLenum filteringMode);
-	void setWrap(GLenum wrapMode);
+	void setFiltering(GLenum filteringMode1, GLenum filteringMode2);
+	void setWrap(GLenum wrapMode1, GLenum wrapMode2);
 
 	void enableMipmap();
 
