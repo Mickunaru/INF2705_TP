@@ -28,6 +28,7 @@ class EdgeEffect : public ShaderProgram
 {
 public:
     // TODO: Uniform location ou autre
+    GLuint mvpULoc;
 
 protected:
     virtual void load() override;
@@ -39,6 +40,9 @@ class Sky : public ShaderProgram
 {
 public:
     // TODO: Uniform location ou autre
+    void setMatrices(const glm::mat4& mvp, const glm::mat4& view, const glm::mat4& model);
+    GLuint mvpULoc;
+    GLuint skyboxSamplerULoc;
 
 protected:
     virtual void load() override;
@@ -58,7 +62,7 @@ public:
     
     GLuint globalAmbientULoc;
 public:
-    void setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model);
+    void setMatrices(const glm::mat4& mvp, const glm::mat4& view, const glm::mat4& model);
 
 protected:
     virtual void load() override;
