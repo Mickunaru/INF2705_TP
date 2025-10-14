@@ -17,6 +17,7 @@ void EdgeEffect::load()
 void EdgeEffect::getAllUniformLocations()
 {
     // TODO: Initialiser les valeurs de uniform location en attributs
+    mvpULoc = glGetUniformLocation(id_, "mvp");
 }
 
 
@@ -31,9 +32,18 @@ void Sky::load()
     link();
 }
 
+void Sky::setMatrices(const glm::mat4& mvp,const glm::mat4& view,const glm::mat4& model)
+{
+    // TODO: Initialiser les valeurs de uniform location en attributs
+    glUniformMatrix4fv(mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniform1i(skyboxSamplerULoc, 0);
+}
+
 void Sky::getAllUniformLocations()
 {
     // TODO: Initialiser les valeurs de uniform location en attributs
+    mvpULoc = glGetUniformLocation(id_, "mvp");
+    skyboxSamplerULoc = glGetUniformLocation(id_, "textureSampler");
 }
 
 
@@ -67,13 +77,13 @@ void CelShading::assignAllUniformBlockIndexes()
 }
 
 
-void CelShading::setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model)
+void CelShading::setMatrices(const glm::mat4& mvp, const glm::mat4& view, const glm::mat4& model)
 {
     glm::mat4 modelView = view * model;
     
-    glUniformMatrix4fv(viewULoc, 1, GL_FALSE, &view[0][0]);
-    glUniformMatrix4fv(mvpULoc, 1, GL_FALSE, &mvp[0][0]);
-    glUniformMatrix4fv(modelViewULoc, 1, GL_FALSE, &modelView[0][0]);
+    glUniformMatrix4fv(viewULoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniformMatrix4fv(modelViewULoc, 1, GL_FALSE, glm::value_ptr(modelView));
     glUniformMatrix3fv(normalULoc, 1, GL_TRUE, glm::value_ptr(glm::inverse(glm::mat3(modelView))));
 }
 
