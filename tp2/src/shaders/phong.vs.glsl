@@ -17,13 +17,13 @@ out ATTRIBS_VS_OUT
 
 out LIGHTS_VS_OUT
 {
-    vec3 obsPos;
-    vec3 dirLightDir;
+    vec4 obsPos;
+    vec4 dirLightDir;
     
-    vec3 spotLightsDir[MAX_SPOT_LIGHTS];
-    vec3 spotLightsSpotDir[MAX_SPOT_LIGHTS];
+    vec4 spotLightsDir[MAX_SPOT_LIGHTS];
+    vec4 spotLightsSpotDir[MAX_SPOT_LIGHTS];
     
-    vec3 pointLightsDir[MAX_POINT_LIGHTS];
+    //vec3 pointLightsDir[MAX_POINT_LIGHTS];
 } lightsOut;
 
 uniform mat4 mvp;
@@ -33,35 +33,35 @@ uniform mat3 normalMatrix;
 
 struct Material
 {
-    vec3 emission;
-    vec3 ambient;
-    vec3 diffuse;
+    vec4 emission;
+    vec4 ambient;
+    vec4 diffuse;
     vec3 specular;
     float shininess;
 };
 
 struct DirectionalLight
 {
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-    
-    vec3 direction;
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;  
+    vec4 direction;
 };
 
 struct SpotLight
 {
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
     
-    vec3 position;
+    vec4 position;
     vec3 direction;
     float exponent;
     float openingAngle;
 };
 
 uniform int nSpotLights;
+uniform vec4 globalAmbient;
 
 layout (std140) uniform MaterialBlock
 {
@@ -76,17 +76,31 @@ layout (std140) uniform LightingBlock
 
 void main()
 {
+    float dummy = mat.shininess;
     // Attribs
-    
+    gl_Position = mvp * vec4(position, 1.0);
+    attribsOut.texCoords = texCoords;
+    attribsOut.color = color;
+
+    vec3 transformedNormal = normalMatrix * normal;
+
     // TODO: Écriture des attributs de sortie
     //       Si la normale est nul, lui donner une valeur qui pointe vers le haut.
+    if (length(normal) < 0.0001) {
+        attribsOut.normal = vec3(0.0, 1.0, 0.0); 
+    } else {
+        attribsOut.normal = normalize(transformedNormal);
+    }
 
     // Lights
-
+    lightsOut.obsPos = (modelView * vec4(position, 1.0)); 
+    lightsOut.dirLightDir = (view * vec4(dirLight.direction.xyz, 0.0));
     // TODO: Écriture des propriétés de lumières en sortie    
     for(int i = 0; i < nSpotLights; i++)
     {
-        // ...
+        vec3 spotPosVS = vec3(view * (spotLights[i].position));
+        lightsOut.spotLightsDir[i] = vec4(normalize(spotPosVS - lightsOut.obsPos.xyz),1.0);
+        lightsOut.spotLightsSpotDir[i] = normalize(view * vec4(spotLights[i].direction, 0.0));
     }
     
 }
