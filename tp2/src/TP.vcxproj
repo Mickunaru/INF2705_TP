@@ -184,8 +184,6 @@
     <None Include="shaders\phong.vs.glsl" />
     <None Include="shaders\sky.fs.glsl" />
     <None Include="shaders\sky.vs.glsl" />
-    <None Include="shaders\transform.fs.glsl" />
-    <None Include="shaders\transform.vs.glsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\inf2705\OpenGLApplication.hpp" />

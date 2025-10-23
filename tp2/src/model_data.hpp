@@ -8,9 +8,9 @@ float ground[] =
 {
     // Position           // Texture coordinates
     -0.5f, 0.0f, -0.5f,   0.0f, 0.0f,
-     0.5f, 0.0f, -0.5f,   0.0f, 0.0f,
-     0.5f, 0.0f,  0.5f,   0.0f, 0.0f,
-    -0.5f, 0.0f,  0.5f,   0.0f, 0.0f
+     0.5f, 0.0f, -0.5f,   10.0f, 0.0f,
+     0.5f, 0.0f,  0.5f,   10.0f, 5.0f,
+    -0.5f, 0.0f,  0.5f,   0.0f, 5.0f
 };
 
 unsigned int planeElements[] =
@@ -23,8 +23,8 @@ float street[] =
 {
     // Position           // Texture coordinates
     -0.5f, 0.0f, -0.5f,   0.0f, 0.0f,
-     0.5f, 0.0f, -0.5f,   0.0f, 0.0f,
-     0.5f, 0.0f,  0.5f,   0.0f, 0.0f,
-    -0.5f, 0.0f,  0.5f,   0.0f, 0.0f
+     0.5f, 0.0f, -0.5f,   10.0f, 0.0f,
+     0.5f, 0.0f,  0.5f,   10.0f, 1.0f,
+    -0.5f, 0.0f,  0.5f,   0.0f, 1.0f
 };
 

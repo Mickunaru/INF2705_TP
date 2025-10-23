@@ -76,12 +76,6 @@
     <None Include="CMakeLists.txt">
       <Filter>VSCode Files</Filter>
     </None>
-    <None Include="shaders\transform.fs.glsl">
-      <Filter>Shader Source Files</Filter>
-    </None>
-    <None Include="shaders\transform.vs.glsl">
-      <Filter>Shader Source Files</Filter>
-    </None>
     <None Include="shaders\edge.fs.glsl">
       <Filter>Shader Source Files</Filter>
     </None>

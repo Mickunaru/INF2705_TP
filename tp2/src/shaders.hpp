@@ -39,6 +39,7 @@ class Sky : public ShaderProgram
 {
 public:
     // TODO: Uniform location ou autre
+    GLuint mvpULoc;
 
 protected:
     virtual void load() override;
@@ -60,6 +61,7 @@ public:
 
 public:
     void setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model);
+	void printAllProperties();
 
 protected:
     virtual void load() override;

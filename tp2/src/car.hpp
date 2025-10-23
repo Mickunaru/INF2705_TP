@@ -20,27 +20,27 @@ public:
     
     void update(float deltaTime);
     
-    void draw(glm::mat4& projView, glm::mat4& view); // À besoin de la matrice de vue séparément, pour la partie 3.
+    void draw(glm::mat4& projView); // À besoin de la matrice de vue séparément, pour la partie 3.
 
     void drawWindows(glm::mat4& projView, glm::mat4& view); // Dessin des vitres séparées.
     
 private:
     // TODO: Adapter les paramètres des méthodes privée ici au besoin, surtout pour la partie 3.  
-    void drawFrame(const glm::mat4& projView, const glm::mat4& carMatrix);
-    void drawWheel(const glm::mat4& projView, const glm::mat4& carMatrix, const glm::vec3& wheelPos, bool isFront, bool isLeft);
-    void drawWheels(const glm::mat4& projView, const glm::mat4& carMatrix);
+    void drawFrame(glm::mat4& projView);
+    void drawWheel(glm::mat4& projView, const glm::vec3& wheelPos, bool isFront, bool isLeft);
+    void drawWheels(glm::mat4& projView);
     
-    void drawBlinker(const glm::mat4& projView, const glm::mat4& carMatrix, bool isLeftHeadlight);
-    void drawLight(const glm::mat4& projView, const glm::mat4& carMatrix, bool isFront, bool isLeft);
-    void drawHeadlight(const glm::mat4& projView, const glm::mat4& carMatrix, const glm::vec3& position, bool isFront, bool isLeft);
-    void drawHeadlights(const glm::mat4& projView, const glm::mat4& carMatrix);
+    void drawBlinker(glm::mat4& projView, glm::mat4& headlightMatrix, bool isLeftHeadlight);
+    void drawLight(glm::mat4& projView, glm::mat4& headlightMatrix,  bool isFront, bool isLeft);
+    void drawHeadlight(glm::mat4& projView, const glm::vec3& position, bool isFront, bool isLeft);
+    void drawHeadlights(glm::mat4& projView);
     
 private:    
     Model frame_;
     Model wheel_;
     Model blinker_;
     Model light_;
-    Model windows[6]; // Nouveaux modèles à ajouter.
+    Model windows[6];
     
 public:
     glm::mat4 carModel;
@@ -57,9 +57,6 @@ public:
     
     bool isBlinkerOn;
     float blinkerTimer;
-    
-    GLuint colorModUniformLocation;
-    GLuint mvpUniformLocation;
 
     EdgeEffect* edgeEffectShader;
     CelShading* celShadingShader;

@@ -34,6 +34,7 @@ void Sky::load()
 void Sky::getAllUniformLocations()
 {
     // TODO: Initialiser les valeurs de uniform location en attributs
+    mvpULoc = glGetUniformLocation(id_, "mvp");
 }
 
 
@@ -77,3 +78,13 @@ void CelShading::setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model)
     glUniformMatrix3fv(normalULoc, 1, GL_TRUE, glm::value_ptr(glm::inverse(glm::mat3(modelView))));
 }
 
+void CelShading::printAllProperties()
+{
+    printf("CelShading Shader Properties:\n");
+    printf("MVP Uniform Location: %u\n", mvpULoc);
+    printf("View Uniform Location: %u\n", viewULoc);
+    printf("ModelView Uniform Location: %u\n", modelViewULoc);
+    printf("Normal Matrix Uniform Location: %u\n", normalULoc);
+    printf("Number of Spot Lights Uniform Location: %u\n", nSpotLightsULoc);
+    printf("Global Ambient Uniform Location: %u\n", globalAmbientULoc);
+}

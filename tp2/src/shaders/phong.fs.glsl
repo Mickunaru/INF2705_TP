@@ -1,6 +1,6 @@
 #version 330 core
 
-#define MAX_SPOT_LIGHTS 16
+#define MAX_SPOT_LIGHTS 8
 #define MAX_POINT_LIGHTS 4
 
 in ATTRIBS_VS_OUT
@@ -77,7 +77,17 @@ float computeSpot(in float openingAngle, in float exponent, in vec3 spotDir, in 
     float spotFactor = 0.0;
     
     // TODO: Calcul de spotlight, l'algorithme classique d'OpenGL vu en classe (voir annexe).
+    vec3 Ln = normalize(spotDir);
+    vec3 L  = normalize(lightDir);
     
+    float cosGamma = dot(L, Ln);
+    float cosDelta = cos(openingAngle);
+
+    if(cosGamma > cosDelta)
+    {
+        spotFactor = pow(cosGamma, exponent);
+    }
+
     return spotFactor;
 }
 
@@ -86,10 +96,10 @@ void main()
     // TODO: Calcul d'illumination
 
     // Directional light
-    
+
     // TODO: Seulement la lumière directionnel à l'effet de cel-shading, sur la composante diffuse et spéculaire
     const float LEVELS = 4;
-        
+
     // Spot light
     
     for(int i = 0; i < nSpotLights; i++)
@@ -102,7 +112,8 @@ void main()
         // Le facteur impacte la composante diffuse et spéculaire.
     }
 
-    vec3 color = vec3(0);
     //color += normal/2.0 + vec3(0.5); // DEBUG: Show normals
-    FragColor = vec4(color, 1.0);
+    vec4 texColor = texture(diffuseSampler, attribsIn.texCoords);
+    vec3 finalColor = (attribsIn.color == vec3(0.0)) ? texColor.rgb : attribsIn.color;
+    FragColor = vec4(finalColor, texColor.a);
 }
