@@ -115,7 +115,10 @@ void Car::update(float deltaTime)
 void Car::draw(glm::mat4& projView)
 {
     drawFrame(projView);
+
 	drawWheels(projView);
+
+    celShadingShader->use();
 	drawHeadlights(projView);
 }
     
@@ -124,8 +127,26 @@ void Car::drawFrame(glm::mat4& projView)
     glm::mat4 model = translate(carModel, vec3(0.0f, 0.25f, 0.0f));
     glm::mat4 mvp = projView * model;
 
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilMask(0xFF);
+
     celShadingShader->setMatrices(mvp, carModel, model);
     frame_.draw();
+
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilMask(0x00);
+    glDepthMask(GL_FALSE);
+
+    edgeEffectShader->use();
+    glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+    frame_.draw();
+
+    glStencilMask(0xFF);
+    glStencilFunc(GL_ALWAYS, 0, 0xFF);
+    glDepthMask(GL_TRUE);
 }
 
 void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
@@ -204,8 +225,26 @@ void Car::drawWheel(glm::mat4& projView, const glm::vec3& wheelPos, bool isFront
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, -axisOffset));
     glm::mat4 mvp = projView * model;
 
-	celShadingShader->setMatrices(mvp, carModel, model);
+	glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilMask(0xFF);
+
+    celShadingShader->setMatrices(mvp, carModel, model);
     wheel_.draw();
+
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilMask(0x00);
+	glDepthMask(GL_FALSE);
+
+    edgeEffectShader->use();
+    glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+    wheel_.draw();
+
+	glStencilMask(0xFF);
+	glStencilFunc(GL_ALWAYS, 0, 0xFF);
+    glDepthMask(GL_TRUE);
 }
 
 void Car::drawWheels(glm::mat4& projView)
@@ -218,9 +257,16 @@ void Car::drawWheels(glm::mat4& projView)
         glm::vec3( 1.4f , 0.245f,  0.38f)  //Rear left
     };
 
+    celShadingShader->use();
     drawWheel(projView, WHEEL_POSITIONS[0], true, false);
+
+    celShadingShader->use();
     drawWheel(projView, WHEEL_POSITIONS[1], true, true);
+
+    celShadingShader->use();
     drawWheel(projView, WHEEL_POSITIONS[2], false, false);
+
+    celShadingShader->use();
     drawWheel(projView, WHEEL_POSITIONS[3], false, true);
 }
 

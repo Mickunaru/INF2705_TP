@@ -8,4 +8,6 @@ uniform mat4 mvp;
 void main()
 {
     // TODO: Modifier la position des sommets le long des normales. On utilise un facteur de 0.05.
+    vec3 newPosition = position + normal * 0.05;
+    gl_Position = mvp * vec4(newPosition, 1.0);
 }

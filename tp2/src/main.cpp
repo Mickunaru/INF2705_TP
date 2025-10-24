@@ -498,12 +498,33 @@ struct App : public OpenGLApplication
 
 		glm::mat4 streetlightMVP[N_STREETLIGHTS];
 
+        streetlightTexture_.use();
         setMaterial(streetlightMat);
         for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
         {
             streetlightMVP[i] = projView * streetlightModelMatrices_[i];
-			celShadingShader_.setMatrices(streetlightMVP[i], view, streetlightModelMatrices_[i]);
+
+            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_STENCIL_TEST);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glStencilMask(0xFF);
+
+            celShadingShader_.use();
+            celShadingShader_.setMatrices(streetlightMVP[i], view, streetlightModelMatrices_[i]);
             streetlight_.draw();
+
+            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            glStencilMask(0x00);
+            glDepthMask(GL_FALSE);
+
+            edgeEffectShader_.use();
+            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(streetlightMVP[i]));
+            streetlight_.draw();
+
+            glStencilMask(0xFF);
+            glStencilFunc(GL_ALWAYS, 0, 0xFF);
+            glDepthMask(GL_TRUE);
         }
 
         //TODO
@@ -516,8 +537,27 @@ struct App : public OpenGLApplication
                 setMaterial(streetlightMat);
 
             // TODO: Dessin du mesh de la lumière.
+            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_STENCIL_TEST);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glStencilMask(0xFF);
+
+            celShadingShader_.use();
             celShadingShader_.setMatrices(streetlightMVP[i], view, streetlightModelMatrices_[i]);
-			streetlightLight_.draw();
+            streetlightLight_.draw();
+
+            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            glStencilMask(0x00);
+            glDepthMask(GL_FALSE);
+
+            edgeEffectShader_.use();
+            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(streetlightMVP[i]));
+            streetlightLight_.draw();
+
+            glStencilMask(0xFF);
+            glStencilFunc(GL_ALWAYS, 0, 0xFF);
+            glDepthMask(GL_TRUE);
         }
     }
 
@@ -556,8 +596,28 @@ struct App : public OpenGLApplication
         for (unsigned int i = 0; i < N_TREES; ++i)
         {
             glm::mat4 treeMVP = projView * treeModelMatrices_[i];
+
+            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_STENCIL_TEST);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glStencilMask(0xFF);
+
+            celShadingShader_.use();
             celShadingShader_.setMatrices(treeMVP, view, treeModelMatrices_[i]);
             tree_.draw();
+
+            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            glStencilMask(0x00);
+            glDepthMask(GL_FALSE);
+
+            edgeEffectShader_.use();
+            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(treeMVP));
+            tree_.draw();
+
+            glStencilMask(0xFF);
+            glStencilFunc(GL_ALWAYS, 0, 0xFF);
+            glDepthMask(GL_TRUE);
 		}
     }
 
@@ -765,19 +825,6 @@ struct App : public OpenGLApplication
         // TODO: Dessin des arbres. Oui, ils utilisent le même matériel que le sol.
         // TODO: Dessin des lampadaires.
 
-        celShadingShader_.use();
-        drawGround(projView, view);
-		drawTrees(projView, view);
-
-		carTexture_.use();
-        car_.draw(projView);
-
-		carWindowTexture_.use();
-        car_.drawWindows(projView, view);
-
-        streetlightTexture_.use();
-        drawStreetlights(projView, view);
-
         skyShader_.use();
         if (isDay_)
         {
@@ -791,8 +838,22 @@ struct App : public OpenGLApplication
         glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view));
         glm::mat4 mvp = proj * viewNoTranslation;
         glUniformMatrix4fv(skyShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
-		skybox_.draw();
+        skybox_.draw();
         glDepthFunc(GL_LESS);
+
+        celShadingShader_.use();
+        drawGround(projView, view);
+		drawTrees(projView, view);
+
+        celShadingShader_.use();
+        drawStreetlights(projView, view);
+
+        celShadingShader_.use();
+        carTexture_.use();
+        car_.draw(projView);
+
+        carWindowTexture_.use();
+        car_.drawWindows(projView, view);
     }
 
 private:

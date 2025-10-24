@@ -22,8 +22,6 @@ out LIGHTS_VS_OUT
     
     vec3 spotLightsDir[MAX_SPOT_LIGHTS];
     vec3 spotLightsSpotDir[MAX_SPOT_LIGHTS];
-    
-    vec3 pointLightsDir[MAX_POINT_LIGHTS];
 } lightsOut;
 
 uniform mat4 mvp;
