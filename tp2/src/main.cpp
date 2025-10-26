@@ -125,8 +125,8 @@ Material windowMat =
 struct App : public OpenGLApplication
 {
     App()
-        : cameraPosition_(-9.0f, 1.5f, 1.5f)
-        , cameraOrientation_(-10.f, -60.0f)
+        : cameraPosition_(0.0f, 0.0f, 0.0f)
+        , cameraOrientation_(0.f, 0.0f)
         , isMouseMotionEnabled_(false)
         , currentScene_(0)
         , isDay_(true)
@@ -149,40 +149,29 @@ struct App : public OpenGLApplication
             "Espace : activer/désactiver la souris." "\n"
         );
 
-        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
-
         // Config de base.
-        glClearColor(0.2f, 0.6f, 0.8f, 1.0f);
+        glClearColor(0.2f, 0.7f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
+        //CHECK_GL_ERROR;
 
         // Partie 1
-
         // TODO:
         // Création des shaders program.
         // Fait appel à la méthode "create()".
-        glm::mat4 view = getViewMatrix();
-        glm::mat4 proj = getPerspectiveProjectionMatrix();
-        glm::mat4 projView = proj * view;
 
+        //CHECK_GL_ERROR;
         celShadingShader_.create();
-        //celShadingShader_.setMatrices(projView, view, proj,cameraPosition_);
-        //celShadingShader_.use();
 
-        edgeEffectShader_.create();
-        skyShader_.create();
-        
-
-        mvpUniformLocation_ = celShadingShader_.mvpULoc;
+        //edgeEffectShader_.create();
+        //skyShader_.create();
+        //mvpUniformLocation_ = celShadingShader_.mvpULoc;
         //colorModUniformLocation_ = celShadingShader_.colorModULoc;
        
         // TODO: À ajouter.
-        car_.edgeEffectShader = &edgeEffectShader_;
+        //car_.edgeEffectShader = &edgeEffectShader_;
         car_.celShadingShader = &celShadingShader_;
         car_.material = &material_;
-
 
         // TODO: Chargement des textures, ainsi que la configuration de leurs paramètres.
         //
@@ -198,41 +187,34 @@ struct App : public OpenGLApplication
 
         // Load textures
         grassTexture_.load("../textures/grass.jpg");
-        grassTexture_.setFiltering(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
-        grassTexture_.setWrap(GL_REPEAT, GL_REPEAT);
+        grassTexture_.setFiltering(GL_LINEAR);
+        grassTexture_.setWrap(GL_REPEAT);
         grassTexture_.enableMipmap();
-        //grassTexture_.use(GL_LINEAR);
+
 
         streetTexture_.load("../textures/street.jpg");
-        streetTexture_.setFiltering(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
-        streetTexture_.setWrap(GL_REPEAT, GL_REPEAT);
+        streetTexture_.setFiltering(GL_LINEAR);
+        streetTexture_.setWrap(GL_REPEAT);
         streetTexture_.enableMipmap();
-        //streetTexture_.use(GL_LINEAR); 
 
         streetlightTexture_.load("../textures/streetlight.jpg");
-        streetlightTexture_.setFiltering(GL_NEAREST, GL_NEAREST);
-        streetlightTexture_.setWrap(GL_REPEAT, GL_REPEAT);
-        //streetlightTexture_.use(GL_NEAREST); 
+        streetlightTexture_.setFiltering(GL_NEAREST);
+        streetlightTexture_.setWrap(GL_REPEAT);
 
         streetlightLightTexture_.load("../textures/streetlight_light.png");
-        streetlightLightTexture_.setFiltering(GL_NEAREST, GL_NEAREST);
-        streetlightLightTexture_.setWrap(GL_REPEAT, GL_REPEAT);
-        //streetlightLightTexture_.use(GL_NEAREST); 
+        streetlightLightTexture_.setFiltering(GL_NEAREST);
+        streetlightLightTexture_.setWrap(GL_REPEAT);
 
         treeTexture_.load("../textures/tree.jpg");
-        treeTexture_.setFiltering(GL_NEAREST, GL_NEAREST);
-        treeTexture_.setWrap(GL_REPEAT, GL_REPEAT);
-        //treeTexture_.use(GL_NEAREST); 
+        treeTexture_.setFiltering(GL_NEAREST);
+        treeTexture_.setWrap(GL_REPEAT);
 
         carTexture_.load("../textures/car.png");
-        carTexture_.setFiltering(GL_LINEAR, GL_LINEAR);
-        carTexture_.setWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-        //carTexture_.use(GL_LINEAR);
+        carTexture_.setFiltering(GL_LINEAR);
 
         carWindowTexture_.load("../textures/window.png");
-        carWindowTexture_.setFiltering(GL_NEAREST, GL_NEAREST);
-        carWindowTexture_.setWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-        //carWindowTexture_.use(GL_NEAREST);
+        carWindowTexture_.setFiltering(GL_NEAREST);
+        carWindowTexture_.setWrap(GL_CLAMP_TO_EDGE);
         
         // TODO: Chargement des deux skyboxes.
 
@@ -254,19 +236,20 @@ struct App : public OpenGLApplication
             "../textures/skyboxNight/back.png",
         };
         skyboxTexture_.load(pathes);
+        CHECK_GL_ERROR;
         skyboxNightTexture_.load(nightPathes);
 
-        //skyboxTexture_.use(GL_LINEAR);
-        //skyboxNightTexture_.use(GL_LINEAR);
-
         loadModels();
+        CHECK_GL_ERROR;
         initStaticModelMatrices();
+
 
         // Partie 3
 
         // TODO: À ajouter. Aucune modification nécessaire.
         material_.allocate(&defaultMat, sizeof(Material));
         material_.setBindingIndex(0);
+        CHECK_GL_ERROR;
 
         lightsData_.dirLight =
         {
@@ -360,7 +343,7 @@ struct App : public OpenGLApplication
         // TODO: À ajouter.
         // Et oui, il est désormais possible de recharger les shaders en gardant l'application ouvert.
         // 
-        celShadingShader_.use();
+        //celShadingShader_.use();
 
         if (ImGui::Button("Reload Shaders"))
         {
@@ -373,6 +356,7 @@ struct App : public OpenGLApplication
             CHECK_GL_ERROR;
         }
         ImGui::End();
+        CHECK_GL_ERROR;
 
         switch (currentScene_)
         {
@@ -462,9 +446,9 @@ struct App : public OpenGLApplication
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
             positionOffset.x += SPEED;
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q))
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift))
             positionOffset.y -= SPEED;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::E))
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space))
             positionOffset.y += SPEED;
 
         positionOffset = glm::rotate(glm::mat4(1.0f), cameraOrientation_.y, glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(positionOffset, 1);
@@ -496,7 +480,6 @@ struct App : public OpenGLApplication
 
             // TODO: À ajouter. C'est pour avoir la position de la lumière du lampadaire pour la partie 3.
             streetlightLightPositions[i] = glm::vec3(streetlightModelMatrices_[i] * glm::vec4(-2.77, 5.2, 0.0, 1.0));
-            //treeTexture_[i] = glm::vec3(treeModelMatrices_[i] * glm::vec4(-2.77, 5.2, 0.0, 1.0));
         }
         areStreetlightsInitialized_ = true;
         areTreesInitialized_ = true;
@@ -507,7 +490,6 @@ struct App : public OpenGLApplication
     //       votre code pour faire le dessin des deux parties.
     void drawStreetlights(glm::mat4& projView, glm::mat4& view)
     {
-        celShadingShader_.use();
         //glUniform1i(celShadingShader_.textureSamplerULoc, 0);
 
         if (!areStreetlightsInitialized_) {
@@ -547,12 +529,12 @@ struct App : public OpenGLApplication
             else
                 setMaterial(streetlightMat);
             // TODO: Dessin du mesh de la lumière.
-            streetlightLightTexture_.use(GL_TEXTURE0);
+            //streetlightLightTexture_.use(GL_TEXTURE0);
             streetlightLight_.draw();
 
             // TODO: Dessin du mesh du lampadaire.
             setMaterial(streetlightMat);
-            streetlightTexture_.use(GL_TEXTURE0);
+            //streetlightTexture_.use(GL_TEXTURE0);
             streetlight_.draw();
         }
     }
@@ -560,9 +542,6 @@ struct App : public OpenGLApplication
     // TODO: À modifier, ajouter les textures, et l'effet de contour.
     void drawTrees(glm::mat4& projView, glm::mat4& view)
     {
-        celShadingShader_.use();
-        //glUniform1i(celShadingShader_.textureSamplerULoc, 0);
-
         if (!areTreesInitialized_) {
 			const unsigned int SEED = 123;
             std::mt19937 rng(SEED);
@@ -590,17 +569,13 @@ struct App : public OpenGLApplication
             }
             areTreesInitialized_ = true;
         }
-
-        //TODO
+         
+        treeTexture_.use();
         for (unsigned int i = 0; i < N_TREES; ++i)
         {
+            //setMaterial(streetMat);
             glm::mat4 treeMVP = projView * treeModelMatrices_[i];
             celShadingShader_.setMatrices(treeMVP, view, treeModelMatrices_[i]);
-            //glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(treeMVP));
-            //glUniform3f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f); 
-            setMaterial(streetMat);
-            treeTexture_.use(GL_TEXTURE0);
-         
             tree_.draw();
 		}   
     }
@@ -608,35 +583,24 @@ struct App : public OpenGLApplication
     // TODO: À modifier, ajouter les textures
     void drawGround(glm::mat4& projView, glm::mat4& view)
     {
-        celShadingShader_.use();
-        //glUniform1i(celShadingShader_.textureSamplerULoc, 0);
-
-        glm::mat4 streetModel = glm::scale(glm::mat4(1), glm::vec3(MAP_SIZE, 0.0f, STREET_WIDTH));
+        streetTexture_.use();
+        setMaterial(streetMat);
+        glm::mat4 streetModel = glm::scale(glm::mat4(1), glm::vec3(MAP_SIZE, 1.0f, STREET_WIDTH));
         glm::mat4 streetMVP = projView * streetModel;
         celShadingShader_.setMatrices(streetMVP, view, streetModel);
-        //glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(streetMVP));
-        //glUniform3f(colorModUniformLocation_, 1.f, 1.0f, 1.0f);
-        // TODO: Dessin de la route.
-        setMaterial(streetMat);
-        streetTexture_.use(GL_TEXTURE0);
-        
         street_.draw();
 
+        grassTexture_.use();
+        setMaterial(grassMat);
         glm::mat4 grassModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
         grassModel = glm::scale(grassModel, glm::vec3(MAP_SIZE, 1.0f, 50.0f));
         glm::mat4 grassMVP = projView * grassModel;
-        celShadingShader_.setMatrices(grassMVP, projView, grassModel);
-        //glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(grassMVP));
-        //glUniform3f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f);
-        // TODO: Dessin du sol.
-        setMaterial(grassMat);
-        grassTexture_.use(GL_TEXTURE0);
-        
+        celShadingShader_.setMatrices(grassMVP, view, grassModel);
         grass_.draw();
 
-        float ambientIntensity = 0.05;
-        glUniform3f(celShadingShader_.globalAmbientULoc, ambientIntensity, ambientIntensity, ambientIntensity);  
-        
+        /*float ambientIntensity = 0.05;
+        glUniform3f(celShadingShader_.globalAmbientULoc, ambientIntensity, ambientIntensity, ambientIntensity); 
+        CHECK_GL_ERROR; */
     }
 
     glm::mat4 getViewMatrix()
@@ -786,6 +750,7 @@ struct App : public OpenGLApplication
     //       les effets de contour, etc.
     void sceneMain()
     {    
+        CHECK_GL_ERROR;
         ImGui::Begin("Scene Parameters");
         if (ImGui::Button("Toggle Day/Night"))
         {
@@ -806,6 +771,7 @@ struct App : public OpenGLApplication
     
         updateCameraInput();
         car_.update(deltaTime_);
+        CHECK_GL_ERROR;
         
         updateCarLight();
         lights_.updateData(&lightsData_.spotLights[N_STREETLIGHTS], sizeof(DirectionalLight) + N_STREETLIGHTS * sizeof(SpotLight), 4 * sizeof(SpotLight));
@@ -817,34 +783,32 @@ struct App : public OpenGLApplication
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
 
-        skyShader_.use();
+        /*skyShader_.use();
         glm::mat4 skyView = glm::mat4(glm::mat3(view));
         glm::mat4 skyProjView = proj * skyView;
+        CHECK_GL_ERROR;*/
 
         celShadingShader_.use();
-
         drawGround(projView, view);
         // TODO: Dessin des arbres. Oui, ils utilisent le même matériel que le sol.
         drawTrees(projView, view);
 
         // TODO: Dessin des lampadaires.
-        drawStreetlights(projView, view);
+        //drawStreetlights(projView, view);
 
         // TODO: Dessin de l'automobile
-        carTexture_.use(GL_TEXTURE0);
-        setMaterial(defaultMat);
-        car_.draw(projView, view);   
+        //setMaterial(defaultMat);
+        //car_.draw(projView, view);   
         // TODO: Dessin des fenêtres
-        carWindowTexture_.use(GL_TEXTURE0);
-        setMaterial(windowMat);
-        car_.drawWindows(projView, view);
+        //carWindowTexture_.use(GL_TEXTURE0);
+        //setMaterial(windowMat);
+        //car_.drawWindows(projView, view);
         // TODO: Dessin du skybox
         //skyboxTexture_.use(GL_LINEAR);
         //setMaterial(skyboxMat);
         //skyboxNightTexture_.use(GL_LINEAR);
         //setMaterial(skyboxMat);
-        //skybox_.draw();
-        
+        //skybox_.draw();        
     }
 
 private:

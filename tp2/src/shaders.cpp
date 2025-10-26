@@ -84,6 +84,6 @@ void CelShading::setMatrices(const glm::mat4& mvp, const glm::mat4& view, const 
     glUniformMatrix4fv(viewULoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
     glUniformMatrix4fv(modelViewULoc, 1, GL_FALSE, glm::value_ptr(modelView));
-    glUniformMatrix3fv(normalULoc, 1, GL_TRUE, glm::value_ptr(glm::inverse(glm::mat3(modelView))));
+    //glUniformMatrix3fv(normalULoc, 1, GL_TRUE, glm::value_ptr(glm::inverse(glm::mat3(modelView))));
 }
 

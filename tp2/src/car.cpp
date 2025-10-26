@@ -122,6 +122,7 @@ void Car::draw(glm::mat4& projView, glm::mat4& view)
     
 void Car::drawFrame(const glm::mat4& projView, const glm::mat4& carMatrix)
 {
+    
     glm::mat4 model = translate(carMatrix, vec3(0.0f, 0.25f, 0.0f));
     glm::mat4 mvp = projView * model;
 
