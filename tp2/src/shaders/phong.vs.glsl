@@ -72,8 +72,6 @@ layout (std140) uniform LightingBlock
     SpotLight spotLights[MAX_SPOT_LIGHTS];
 };
 
-out vec3 fragPos;
-
 void main()
 {
     // Attribs
@@ -81,30 +79,22 @@ void main()
     // TODO: Écriture des attributs de sortie
     //       Si la normale est nul, lui donner une valeur qui pointe vers le haut.
     attribsOut.texCoords = texCoords;
-    attribsOut.normal = normalize(length(normal) == 0.0 ? vec3(0.0, 1.0, 0.0) : normal);
+    attribsOut.normal = normalize(normal == vec3(0.0) ? vec3(0.0, 1.0, 0.0) : normal);
     attribsOut.color = color;
 
     // Lights
     vec4 posView = modelView * vec4(position, 1.0);
     lightsOut.obsPos = posView.xyz;
-    fragPos = posView.xyz;
-
     lightsOut.dirLightDir = normalize(mat3(view) * -dirLight.direction);
 
     // TODO: Écriture des propriétés de lumières en sortie    
     for(int i = 0; i < nSpotLights; i++)
     {
-        if (i < nSpotLights) {
-            vec3 spotPosView = vec3(view * vec4(spotLights[i].position, 1.0));
-            vec3 spotDirView = normalize(mat3(view) * -spotLights[i].direction);
+        vec3 spotPosView = vec3(view * vec4(spotLights[i].position, 1.0));
+        vec3 spotDirView = normalize(mat3(view) * -spotLights[i].direction);
 
-            lightsOut.spotLightsDir[i] = normalize(spotPosView - posView.xyz);
-            lightsOut.spotLightsSpotDir[i] = spotDirView;
-        }
-        else {
-            lightsOut.spotLightsDir[i] = vec3(0.0);
-            lightsOut.spotLightsSpotDir[i] = vec3(0.0, 0.0, 1.0);
-        }
+        lightsOut.spotLightsDir[i] = normalize(spotPosView - posView.xyz);
+        lightsOut.spotLightsSpotDir[i] = spotDirView;
     }
     
     gl_Position = mvp * vec4(position, 1.0);
