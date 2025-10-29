@@ -112,41 +112,44 @@ void Car::update(float deltaTime)
 //       Partie 2: Ajouter le calcul de stencil pour le chassi et les roues pour avoir
 //                 le contour de la voiture.
 
-void Car::draw(glm::mat4& projView)
+CarDrawResult Car::draw(glm::mat4& projView)
 {
-    drawFrame(projView);
+	CarDrawResult result;
 
-	drawWheels(projView);
+    result.frameMvp = drawFrame(projView);
+
+	drawWheels(projView, result.wheelMvps);
 
     celShadingShader->use();
 	drawHeadlights(projView);
+
+	return result;
+}
+
+void Car::drawBorder(CarDrawResult& carDrawResult)
+{
+	drawFrameBorder(carDrawResult.frameMvp);
+	for (int i = 0; i < 4; i++)
+    {
+        drawWheelBorder(carDrawResult.wheelMvps[i]);
+	}
 }
     
-void Car::drawFrame(glm::mat4& projView)
+glm::mat4 Car::drawFrame(glm::mat4& projView)
 {
     glm::mat4 model = translate(carModel, vec3(0.0f, 0.25f, 0.0f));
     glm::mat4 mvp = projView * model;
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_STENCIL_TEST);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-    glStencilFunc(GL_ALWAYS, 1, 0xFF);
-    glStencilMask(0xFF);
-
     celShadingShader->setMatrices(mvp, carModel, model);
     frame_.draw();
 
-    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-    glStencilMask(0x00);
-    glDepthMask(GL_FALSE);
+    return mvp;
+}
 
-    edgeEffectShader->use();
-    glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+void Car::drawFrameBorder(glm::mat4& frameMvp)
+{
+    glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(frameMvp));
     frame_.draw();
-
-    glStencilMask(0xFF);
-    glStencilFunc(GL_ALWAYS, 0, 0xFF);
-    glDepthMask(GL_TRUE);
 }
 
 void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
@@ -208,7 +211,7 @@ void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
     glDisable(GL_BLEND);
 }
 
-void Car::drawWheel(glm::mat4& projView, const glm::vec3& wheelPos, bool isFront, bool isLeft)
+glm::mat4 Car::drawWheel(glm::mat4& projView, const glm::vec3& wheelPos, bool isFront, bool isLeft)
 {
     glm::mat4 model = glm::translate(carModel, wheelPos);
 
@@ -234,40 +237,30 @@ void Car::drawWheel(glm::mat4& projView, const glm::vec3& wheelPos, bool isFront
     celShadingShader->setMatrices(mvp, carModel, model);
     wheel_.draw();
 
-    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-    glStencilMask(0x00);
-	glDepthMask(GL_FALSE);
-
-    edgeEffectShader->use();
-    glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
-    wheel_.draw();
-
-	glStencilMask(0xFF);
-	glStencilFunc(GL_ALWAYS, 0, 0xFF);
-    glDepthMask(GL_TRUE);
+	return mvp;
 }
 
-void Car::drawWheels(glm::mat4& projView)
+void Car::drawWheelBorder(glm::mat4& wheelMvp)
+{
+    glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(wheelMvp));
+    wheel_.draw();
+}
+
+void Car::drawWheels(glm::mat4& projView, glm::mat4 outWheelMvps[4])
 {
     glm::vec3 WHEEL_POSITIONS[] =
     {
 		glm::vec3(-1.29f, 0.245f, -0.57f), //Front right
-		glm::vec3(-1.29f, 0.245f,  0.38f), //Front left, 
+		glm::vec3(-1.29f, 0.245f,  0.38f), //Front left
         glm::vec3( 1.4f , 0.245f, -0.57f), //Rear right
         glm::vec3( 1.4f , 0.245f,  0.38f)  //Rear left
     };
 
     celShadingShader->use();
-    drawWheel(projView, WHEEL_POSITIONS[0], true, false);
-
-    celShadingShader->use();
-    drawWheel(projView, WHEEL_POSITIONS[1], true, true);
-
-    celShadingShader->use();
-    drawWheel(projView, WHEEL_POSITIONS[2], false, false);
-
-    celShadingShader->use();
-    drawWheel(projView, WHEEL_POSITIONS[3], false, true);
+    outWheelMvps[0] = drawWheel(projView, WHEEL_POSITIONS[0], true, false);
+    outWheelMvps[1] = drawWheel(projView, WHEEL_POSITIONS[1], true, true);
+    outWheelMvps[2] = drawWheel(projView, WHEEL_POSITIONS[2], false, false);
+    outWheelMvps[3] = drawWheel(projView, WHEEL_POSITIONS[3], false, true);
 }
 
 void Car::drawBlinker(glm::mat4& projView, glm::mat4& headlightMatrix, bool isLeftHeadlight)

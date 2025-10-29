@@ -496,35 +496,14 @@ struct App : public OpenGLApplication
             areStreetlightsInitialized_ = true;
         }
 
-		glm::mat4 streetlightMVP[N_STREETLIGHTS];
-
         streetlightTexture_.use();
         setMaterial(streetlightMat);
         for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
         {
-            streetlightMVP[i] = projView * streetlightModelMatrices_[i];
+            streetlightMvps[i] = projView * streetlightModelMatrices_[i];
 
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_STENCIL_TEST);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilFunc(GL_ALWAYS, 1, 0xFF);
-            glStencilMask(0xFF);
-
-            celShadingShader_.use();
-            celShadingShader_.setMatrices(streetlightMVP[i], view, streetlightModelMatrices_[i]);
+            celShadingShader_.setMatrices(streetlightMvps[i], view, streetlightModelMatrices_[i]);
             streetlight_.draw();
-
-            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-            glStencilMask(0x00);
-            glDepthMask(GL_FALSE);
-
-            edgeEffectShader_.use();
-            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(streetlightMVP[i]));
-            streetlight_.draw();
-
-            glStencilMask(0xFF);
-            glStencilFunc(GL_ALWAYS, 0, 0xFF);
-            glDepthMask(GL_TRUE);
         }
 
         //TODO
@@ -537,29 +516,20 @@ struct App : public OpenGLApplication
                 setMaterial(streetlightMat);
 
             // TODO: Dessin du mesh de la lumière.
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_STENCIL_TEST);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilFunc(GL_ALWAYS, 1, 0xFF);
-            glStencilMask(0xFF);
-
-            celShadingShader_.use();
-            celShadingShader_.setMatrices(streetlightMVP[i], view, streetlightModelMatrices_[i]);
+            celShadingShader_.setMatrices(streetlightMvps[i], view, streetlightModelMatrices_[i]);
             streetlightLight_.draw();
-
-            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-            glStencilMask(0x00);
-            glDepthMask(GL_FALSE);
-
-            edgeEffectShader_.use();
-            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(streetlightMVP[i]));
-            streetlightLight_.draw();
-
-            glStencilMask(0xFF);
-            glStencilFunc(GL_ALWAYS, 0, 0xFF);
-            glDepthMask(GL_TRUE);
         }
     }
+
+    void drawStreetlightBorders()
+    {
+        for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
+        {
+            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(streetlightMvps[i]));
+            streetlight_.draw();
+            streetlightLight_.draw();
+        }
+	}
 
     // TODO: À modifier, ajouter les textures, et l'effet de contour.
     void drawTrees(glm::mat4& projView, glm::mat4& view)
@@ -595,30 +565,20 @@ struct App : public OpenGLApplication
 		treeTexture_.use();
         for (unsigned int i = 0; i < N_TREES; ++i)
         {
-            glm::mat4 treeMVP = projView * treeModelMatrices_[i];
+            treeMvps[i] = projView * treeModelMatrices_[i];
 
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_STENCIL_TEST);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilFunc(GL_ALWAYS, 1, 0xFF);
-            glStencilMask(0xFF);
-
-            celShadingShader_.use();
-            celShadingShader_.setMatrices(treeMVP, view, treeModelMatrices_[i]);
+            celShadingShader_.setMatrices(treeMvps[i], view, treeModelMatrices_[i]);
             tree_.draw();
-
-            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-            glStencilMask(0x00);
-            glDepthMask(GL_FALSE);
-
-            edgeEffectShader_.use();
-            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(treeMVP));
-            tree_.draw();
-
-            glStencilMask(0xFF);
-            glStencilFunc(GL_ALWAYS, 0, 0xFF);
-            glDepthMask(GL_TRUE);
 		}
+    }
+
+    void drawTreesBorder()
+    {
+        for (unsigned int i = 0; i < N_TREES; ++i)
+        {
+            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(treeMvps[i]));
+            tree_.draw();
+        }
     }
 
     // TODO: À modifier, ajouter les textures
@@ -843,17 +803,35 @@ struct App : public OpenGLApplication
 
         celShadingShader_.use();
         drawGround(projView, view);
-		drawTrees(projView, view);
 
-        celShadingShader_.use();
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_STENCIL_TEST);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+
+		
+		drawTrees(projView, view);
         drawStreetlights(projView, view);
 
-        celShadingShader_.use();
         carTexture_.use();
-        car_.draw(projView);
+        CarDrawResult carDrawResult = car_.draw(projView);
 
         carWindowTexture_.use();
         car_.drawWindows(projView, view);
+
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        glDepthMask(GL_FALSE);
+
+        edgeEffectShader_.use();
+		drawTreesBorder();
+        drawStreetlightBorders();
+        car_.drawBorder(carDrawResult);
+
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+        glDepthMask(GL_TRUE);
     }
 
 private:
@@ -899,9 +877,13 @@ private:
 
     static constexpr unsigned int N_TREES = 12;
     static constexpr unsigned int N_STREETLIGHTS = 5;
+
     glm::mat4 treeModelMatrices_[N_TREES];
     glm::mat4 streetlightModelMatrices_[N_STREETLIGHTS];
     glm::vec3 streetlightLightPositions[N_STREETLIGHTS];
+
+    glm::mat4 treeMvps[N_TREES];
+	glm::mat4 streetlightMvps[N_STREETLIGHTS];
 
     // Imgui var
     const char* const SCENE_NAMES[1] = {
@@ -922,7 +904,7 @@ private:
 int main(int argc, char* argv[])
 {
     WindowSettings settings = {};
-    settings.fps = 60;
+    settings.fps = 10000;
     settings.context.depthBits = 24;
     settings.context.stencilBits = 8;
     settings.context.antiAliasingLevel = 4;
