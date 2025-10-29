@@ -194,6 +194,7 @@ struct App : public OpenGLApplication
             {0.5f, 0.5f, 0.5f, 0.0f},
             {0.5f, -1.0f, 0.5f, 0.0f}
         };
+<<<<<<< Updated upstream
         
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {                
@@ -201,9 +202,24 @@ struct App : public OpenGLApplication
             lightsData_.spotLights[i].direction = glm::vec3(0, -1, 0);
             lightsData_.spotLights[i].exponent = 6.0f;
             lightsData_.spotLights[i].openingAngle = 60.f;        
+=======
+
+        for (int i = 0; i < N_STREETLIGHTS; ++i) {
+            lightsData_.spotLights[i] = {
+                {0.02f, 0.02f, 0.02f, 0.0f},   // ambient
+                {0.8f, 0.8f, 0.8f, 0.0f},      // diffuse
+                {0.4f, 0.4f, 0.4f, 0.0f},      // specular
+                {0.0f, 2.0f, 0.0f, 1.0f},      // position
+                {0.0f, -1.0f, 0.0f},           // direction
+                6.0f,                          // exponent
+                60.0f,                         // openingAngle
+                {0.0f, 0.0f, 0.0f}             // padding
+            };
+>>>>>>> Stashed changes
         }
         
         // Initialisation des paramètres de lumière des phares
+<<<<<<< Updated upstream
         
         lightsData_.spotLights[N_STREETLIGHTS].position = glm::vec4(-1.6, 0.64, -0.45, 0.0f);
         lightsData_.spotLights[N_STREETLIGHTS].direction = glm::vec3(-10, -1, 0);
@@ -226,6 +242,28 @@ struct App : public OpenGLApplication
         lightsData_.spotLights[N_STREETLIGHTS+3].openingAngle = 60.f;
         
         
+=======
+        lightsData_.spotLights[N_STREETLIGHTS].position = glm::vec4(-1.6, 0.64, -0.45, 1.0f);
+        lightsData_.spotLights[N_STREETLIGHTS].direction = glm::vec3(-10, -1, 0);
+        lightsData_.spotLights[N_STREETLIGHTS].exponent = 4.0f;
+        lightsData_.spotLights[N_STREETLIGHTS].openingAngle = cos(glm::radians(30.f));
+
+        lightsData_.spotLights[N_STREETLIGHTS + 1].position = glm::vec4(-1.6, 0.64, 0.45, 1.0f);
+        lightsData_.spotLights[N_STREETLIGHTS + 1].direction = glm::vec3(-10, -1, 0);
+        lightsData_.spotLights[N_STREETLIGHTS + 1].exponent = 4.0f;
+        lightsData_.spotLights[N_STREETLIGHTS + 1].openingAngle = cos(glm::radians(30.0f));
+
+        lightsData_.spotLights[N_STREETLIGHTS + 2].position = glm::vec4(1.6, 0.64, -0.45, 1.0f);
+        lightsData_.spotLights[N_STREETLIGHTS + 2].direction = glm::vec3(10, -1, 0);
+        lightsData_.spotLights[N_STREETLIGHTS + 2].exponent = 4.0f;
+        lightsData_.spotLights[N_STREETLIGHTS + 2].openingAngle = cos(glm::radians(60.f));
+
+        lightsData_.spotLights[N_STREETLIGHTS + 3].position = glm::vec4(1.6, 0.64, 0.45, 1.0f);
+        lightsData_.spotLights[N_STREETLIGHTS + 3].direction = glm::vec3(10, -1, 0);
+        lightsData_.spotLights[N_STREETLIGHTS + 3].exponent = 4.0f;
+        lightsData_.spotLights[N_STREETLIGHTS + 3].openingAngle = cos(glm::radians(60.f));
+
+>>>>>>> Stashed changes
         toggleStreetlight();
         updateCarLight();
         
@@ -304,8 +342,71 @@ struct App : public OpenGLApplication
     //       votre code pour faire le dessin des deux parties.
     void drawStreetlights(glm::mat4& projView, glm::mat4& view)
     {
+<<<<<<< Updated upstream
         // ...
         
+=======
+        if (!areStreetlightsInitialized_) {
+            const unsigned int SEED = 123;
+            std::mt19937 rng(SEED);
+
+            const float STREET_OFFSET = STREET_WIDTH / 2;
+
+            std::uniform_real_distribution<float> distMargin(10.0f, 20.0f);
+
+            float x = -MAP_SIZE / 2;
+            for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
+            {
+                x += distMargin(rng);
+                float y = -0.15f;
+                float z = 0.5f + STREET_OFFSET;
+                float angle = M_PI * 3 / 2;
+                glm::mat4 model(1.0f);
+                model = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+                model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+                streetlightModelMatrices_[i] = model;
+
+            }
+            areStreetlightsInitialized_ = true;
+        }
+
+        glm::mat4 streetlightMVP[N_STREETLIGHTS];
+        for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
+            streetlightMVP[i] = projView * streetlightModelMatrices_[i];
+
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_STENCIL_TEST);
+
+        streetlightTexture_.use();
+        setMaterial(streetlightMat);
+
+        for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
+        { 
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glStencilMask(0xFF);
+
+            celShadingShader_.use();
+            celShadingShader_.setMatrices(streetlightMVP[i], view, streetlightModelMatrices_[i]);
+            streetlight_.draw();
+
+            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            glStencilMask(0x00);
+            glDepthMask(GL_FALSE);
+
+            edgeEffectShader_.use();
+            if (edgeEffectShader_.mvpULoc >= 0)
+                glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(streetlightMVP[i]));
+            streetlight_.draw();
+
+            glStencilMask(0xFF);
+            glStencilFunc(GL_ALWAYS, 0, 0xFF);
+            glDepthMask(GL_TRUE);
+        }
+
+        //TODO
+		streetlightLightTexture_.use();
+>>>>>>> Stashed changes
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
             // ...
@@ -315,9 +416,34 @@ struct App : public OpenGLApplication
             else
                 setMaterial(streetlightMat);
             // TODO: Dessin du mesh de la lumière.
+<<<<<<< Updated upstream
             
             setMaterial(streetlightMat);
             // TODO: Dessin du mesh du lampadaire.
+=======
+            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_STENCIL_TEST);
+
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glStencilMask(0xFF);
+
+            celShadingShader_.use();
+            celShadingShader_.setMatrices(streetlightMVP[i], view, streetlightModelMatrices_[i]);
+            streetlightLight_.draw();
+
+            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            glStencilMask(0x00);
+            glDepthMask(GL_FALSE);
+
+            edgeEffectShader_.use();
+            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(streetlightMVP[i]));
+            streetlightLight_.draw();
+
+            glStencilMask(0xFF);
+            glStencilFunc(GL_ALWAYS, 0, 0xFF);
+            glDepthMask(GL_TRUE);
+>>>>>>> Stashed changes
         }
     }
     
@@ -375,31 +501,36 @@ struct App : public OpenGLApplication
         }
         else
         {
+<<<<<<< Updated upstream
             lightsData_.dirLight.ambient = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f); 
             lightsData_.dirLight.diffuse = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
             lightsData_.dirLight.specular = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+=======
+            lightsData_.dirLight.ambient = glm::vec4(0.05f, 0.05f, 0.1f, 0.0f);
+            lightsData_.dirLight.diffuse = glm::vec4(0.1f, 0.1f, 0.2f, 0.0f);
+            lightsData_.dirLight.specular = glm::vec4(0.05f, 0.05f, 0.1f, 0.0f);
+>>>>>>> Stashed changes
         }
     }
     
     // TODO: À ajouter. Pas de modification.
     void toggleStreetlight()
     {
-        if (isDay_)
+        unsigned int totalLights = N_STREETLIGHTS + 4;
+
+        for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
-            for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
+            if (isDay_)
             {
-                lightsData_.spotLights[i].ambient = glm::vec4(glm::vec3(0.0f), 0.0f);
-                lightsData_.spotLights[i].diffuse = glm::vec4(glm::vec3(0.0f), 0.0f);
-                lightsData_.spotLights[i].specular = glm::vec4(glm::vec3(0.0f), 0.0f);
+                lightsData_.spotLights[i].ambient = glm::vec4(0.0f);
+                lightsData_.spotLights[i].diffuse = glm::vec4(0.0f);
+                lightsData_.spotLights[i].specular = glm::vec4(0.0f);
             }
-        }
-        else
-        {
-            for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
-            {
-                lightsData_.spotLights[i].ambient = glm::vec4(glm::vec3(0.02f), 0.0f);
-                lightsData_.spotLights[i].diffuse = glm::vec4(glm::vec3(0.8f), 0.0f);
-                lightsData_.spotLights[i].specular = glm::vec4(glm::vec3(0.4f), 0.0f);
+            else {
+                lightsData_.spotLights[i].ambient = glm::vec4(0.02f, 0.02f, 0.02f, 1.0f);
+                lightsData_.spotLights[i].diffuse = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
+                lightsData_.spotLights[i].specular = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
+
             }
         }
     }
@@ -407,8 +538,9 @@ struct App : public OpenGLApplication
     // TODO: À ajouter.
     void updateCarLight()
     {
-        if (car_.isHeadlightOn)
+        for (int i = 0; i < 2; i++)
         {
+<<<<<<< Updated upstream
             lightsData_.spotLights[N_STREETLIGHTS].ambient = glm::vec4(glm::vec3(0.01), 0.0f);
             lightsData_.spotLights[N_STREETLIGHTS].diffuse = glm::vec4(glm::vec3(1.0), 0.0f);
             lightsData_.spotLights[N_STREETLIGHTS].specular = glm::vec4(glm::vec3(0.4), 0.0f);
@@ -468,6 +600,118 @@ struct App : public OpenGLApplication
             lightsData_.spotLights[N_STREETLIGHTS+3].diffuse = glm::vec4(0.0f);
             lightsData_.spotLights[N_STREETLIGHTS+3].specular = glm::vec4(0.0f);
         }
+=======
+            int idx = N_STREETLIGHTS + i;
+            if (car_.isHeadlightOn)
+            {
+                lightsData_.spotLights[idx].ambient = glm::vec4(0.01f);
+                lightsData_.spotLights[idx].diffuse = glm::vec4(1.0f);
+                lightsData_.spotLights[idx].specular = glm::vec4(0.4f);
+                lightsData_.spotLights[N_STREETLIGHTS].position = glm::vec4(-1.6, 0.64, -0.45, 1.0f);
+                lightsData_.spotLights[N_STREETLIGHTS].direction = glm::vec3(-10, -1, 0);
+            }
+                if (i == 0)
+                {
+                    lightsData_.spotLights[idx].position = glm::vec4(-1.6f, 0.64f, -0.45f, 1.0f);
+                    lightsData_.spotLights[idx].direction = glm::vec3(-10, -1, 0);
+                }
+                else
+                {
+                    lightsData_.spotLights[idx].position = glm::vec4(-1.6f, 0.64f, 0.45f, 1.0f);
+                    lightsData_.spotLights[idx].direction = glm::vec3(-10, -1, 0);
+                }
+        }
+
+        for (int i = 2; i < 4; i++)
+        {
+            int idx = N_STREETLIGHTS + i;
+            if (car_.isBraking)
+            {
+                lightsData_.spotLights[idx].ambient = glm::vec4(0.01f, 0.0f, 0.0f, 0.0f);
+                lightsData_.spotLights[idx].diffuse = glm::vec4(0.9f, 0.1f, 0.1f, 0.0f);
+                lightsData_.spotLights[idx].specular = glm::vec4(0.35f, 0.05f, 0.05f, 0.0f);
+
+                if (i == 2)
+                {
+                    lightsData_.spotLights[idx].position = glm::vec4(1.6f, 0.64f, -0.45f, 1.0f);
+                    lightsData_.spotLights[idx].direction = glm::vec3(10, -1, 0);
+                }
+                else
+                {
+                    lightsData_.spotLights[idx].position = glm::vec4(1.6f, 0.64f, 0.45f, 1.0f);
+                    lightsData_.spotLights[idx].direction = glm::vec3(10, -1, 0);
+                }
+            }
+            else
+            {
+                lightsData_.spotLights[idx].ambient = glm::vec4(0.0f);
+                lightsData_.spotLights[idx].diffuse = glm::vec4(0.0f);
+                lightsData_.spotLights[idx].specular = glm::vec4(0.0f);
+            }
+        }
+
+        //if (car_.isHeadlightOn)
+        //{
+        //    lightsData_.spotLights[N_STREETLIGHTS].ambient = glm::vec4(glm::vec3(0.01), 0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS].diffuse = glm::vec4(glm::vec3(1.0), 0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS].specular = glm::vec4(glm::vec3(0.4), 0.0f);
+
+        //    lightsData_.spotLights[N_STREETLIGHTS + 1].ambient = glm::vec4(glm::vec3(0.01), 0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 1].diffuse = glm::vec4(glm::vec3(1.0), 0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 1].specular = glm::vec4(glm::vec3(0.4), 0.0f);
+
+        //    // TODO: Partie 3.
+        //    //       Utiliser car_.carModel pour calculer la nouvelle position et orientation de la lumière.
+        //    //       La lumière devrait suivre le véhicule qui se déplace.
+
+        //    lightsData_.spotLights[N_STREETLIGHTS].position = glm::vec4(-1.6, 0.64, -0.45, 1.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS].direction = glm::vec3(-10, -1, 0);
+
+        //    lightsData_.spotLights[N_STREETLIGHTS + 1].position = glm::vec4(-1.6, 0.64, 0.45, 1.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 1].direction = glm::vec3(-10, -1, 0);
+        //}
+        //else 
+        //{
+        //    lightsData_.spotLights[N_STREETLIGHTS].ambient = glm::vec4(0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS].diffuse = glm::vec4(0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS].specular = glm::vec4(0.0f);
+
+        //    lightsData_.spotLights[N_STREETLIGHTS + 1].ambient = glm::vec4(0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 1].diffuse = glm::vec4(0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 1].specular = glm::vec4(0.0f);
+        //}
+
+        //if (car_.isBraking)
+        //{
+        //    lightsData_.spotLights[N_STREETLIGHTS + 2].ambient = glm::vec4(0.01, 0.0, 0.0, 0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 2].diffuse = glm::vec4(0.9, 0.1, 0.1, 0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 2].specular = glm::vec4(0.35, 0.05, 0.05, 0.0f);
+
+        //    lightsData_.spotLights[N_STREETLIGHTS + 3].ambient = glm::vec4(0.01, 0.0, 0.0, 0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 3].diffuse = glm::vec4(0.9, 0.1, 0.1, 0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 3].specular = glm::vec4(0.35, 0.05, 0.05, 0.0f);
+
+        //    // TODO: Partie 3.
+        //    //       Utiliser car_.carModel pour calculer la nouvelle position et orientation de la lumière.
+        //    //       La lumière devrait suivre le véhicule qui se déplace.
+
+        //    lightsData_.spotLights[N_STREETLIGHTS + 2].position = glm::vec4(1.6, 0.64, -0.45, 1.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 2].direction = glm::vec3(10, -1, 0);
+
+        //    lightsData_.spotLights[N_STREETLIGHTS + 3].position = glm::vec4(1.6, 0.64, 0.45, 1.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 3].direction = glm::vec3(10, -1, 0);
+        //}
+        //else
+        //{
+        //    lightsData_.spotLights[N_STREETLIGHTS + 2].ambient = glm::vec4(0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 2].diffuse = glm::vec4(0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 2].specular = glm::vec4(0.0f);
+
+        //    lightsData_.spotLights[N_STREETLIGHTS + 3].ambient = glm::vec4(0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 3].diffuse = glm::vec4(0.0f);
+        //    lightsData_.spotLights[N_STREETLIGHTS + 3].specular = glm::vec4(0.0f);
+        //}
+>>>>>>> Stashed changes
     }
     
     // TODO: À ajouter. Pas de modification.
@@ -488,7 +732,7 @@ struct App : public OpenGLApplication
             isDay_ = !isDay_;
             toggleSun();
             toggleStreetlight();
-            lights_.updateData(&lightsData_, 0, sizeof(DirectionalLight) + N_STREETLIGHTS * sizeof(SpotLight));
+            lights_.updateData(&lightsData_, 0, sizeof(lightsData_));
         }
         ImGui::SliderFloat("Car Speed", &car_.speed, -10.0f, 10.0f, "%.2f m/s");
         ImGui::SliderFloat("Steering Angle", &car_.steeringAngle, -30.0f, 30.0f, "%.2f°");
@@ -504,7 +748,7 @@ struct App : public OpenGLApplication
         car_.update(deltaTime_);
         
         updateCarLight();
-        lights_.updateData(&lightsData_.spotLights[N_STREETLIGHTS], sizeof(DirectionalLight) + N_STREETLIGHTS * sizeof(SpotLight), 4 * sizeof(SpotLight));
+        lights_.updateData(&lightsData_, 0, sizeof(lightsData_));
                 
         glm::mat4 view = getViewMatrix();
         glm::mat4 proj = getPerspectiveProjectionMatrix();
@@ -527,6 +771,37 @@ struct App : public OpenGLApplication
         
         setMaterial(streetlightMat);
         // TODO: Dessin des lampadaires.
+<<<<<<< Updated upstream
+=======
+
+        skyShader_.use();
+        if (isDay_)
+        {
+            skyboxTexture_.use();
+        }
+        else
+        {
+            skyboxNightTexture_.use();
+        }
+        glDepthFunc(GL_LEQUAL);
+        glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view));
+        glm::mat4 mvp = proj * viewNoTranslation;
+        glUniformMatrix4fv(skyShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+        skybox_.draw();
+        glDepthFunc(GL_LESS);
+
+        celShadingShader_.use();
+        drawGround(projView, view);
+		drawTrees(projView, view);
+
+        drawStreetlights(projView, view);
+
+        carTexture_.use();
+        car_.draw(projView);
+
+        carWindowTexture_.use();
+        car_.drawWindows(projView, view);
+>>>>>>> Stashed changes
     }
     
 private:

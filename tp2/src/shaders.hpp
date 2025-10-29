@@ -60,6 +60,10 @@ public:
 
 public:
     void setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model);
+<<<<<<< Updated upstream
+=======
+	void printAllProperties() const;
+>>>>>>> Stashed changes
 
 protected:
     virtual void load() override;
