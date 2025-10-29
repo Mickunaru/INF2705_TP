@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
 #include "happly.h"
 #include <imgui/imgui.h>
 
@@ -124,8 +125,8 @@ Material windowMat =
 struct App : public OpenGLApplication
 {
     App()
-        : cameraPosition_(0.0f, 0.0f, 0.0f)
-		, cameraOrientation_(0.0f, 0.0f)
+        : cameraPosition_(-9.0f, 1.5f, 1.5f)
+        , cameraOrientation_(-10.f, -60.0f)
         , isMouseMotionEnabled_(false)
         , currentScene_(0)
         , isDay_(true)
@@ -148,6 +149,10 @@ struct App : public OpenGLApplication
             "Espace : activer/désactiver la souris." "\n"
         );
 
+        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+
         // Config de base.
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
@@ -158,14 +163,13 @@ struct App : public OpenGLApplication
         // TODO:
         // Création des shaders program.
         // Fait appel à la méthode "create()".
-        edgeEffectShader_.create();
-        celShadingShader_.create();
-        skyShader_.create();
+
 
         // TODO: À ajouter.
         car_.edgeEffectShader = &edgeEffectShader_;
         car_.celShadingShader = &celShadingShader_;
         car_.material = &material_;
+
 
         // TODO: Chargement des textures, ainsi que la configuration de leurs paramètres.
         //
@@ -181,39 +185,7 @@ struct App : public OpenGLApplication
         // texture flou trop près.
         // streetTexture_.use();
         // glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
-        grassTexture_.load("../textures/grass.jpg");
-        grassTexture_.setWrap(GL_REPEAT);
-        grassTexture_.setFiltering(GL_LINEAR);
-        grassTexture_.enableMipmap();
 
-        streetTexture_.load("../textures/street.jpg");
-        streetTexture_.setWrap(GL_REPEAT);
-        streetTexture_.setFiltering(GL_LINEAR);
-        streetTexture_.enableMipmap();
-
-        carTexture_.load("../textures/car.png");
-        carTexture_.setWrap(GL_CLAMP_TO_EDGE);
-        carTexture_.setFiltering(GL_LINEAR);
-
-        carWindowTexture_.load("../textures/window.png");
-        carWindowTexture_.setWrap(GL_CLAMP_TO_EDGE);
-        carWindowTexture_.setFiltering(GL_NEAREST);
-
-        treeTexture_.load("../textures/tree.jpg");
-        treeTexture_.setWrap(GL_REPEAT);
-        treeTexture_.setFiltering(GL_NEAREST);
-
-        streetlightTexture_.load("../textures/streetlight.jpg");
-        streetlightTexture_.setWrap(GL_REPEAT);
-        streetlightTexture_.setFiltering(GL_LINEAR);
-
-        streetlightLightTexture_.load("../textures/streetlight_light.png");
-        streetlightLightTexture_.setWrap(GL_REPEAT);
-        streetlightLightTexture_.setFiltering(GL_NEAREST);
-
-        streetTexture_.use();
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
-        glBindTexture(GL_TEXTURE_2D, 0);
 
         // TODO: Chargement des deux skyboxes.
 
@@ -225,7 +197,6 @@ struct App : public OpenGLApplication
             "../textures/skybox/Daylight Box_Front.bmp",
             "../textures/skybox/Daylight Box_Back.bmp",
         };
-        skyboxTexture_.load(pathes);
 
         const char* nightPathes[] = {
             "../textures/skyboxNight/right.png",
@@ -235,12 +206,13 @@ struct App : public OpenGLApplication
             "../textures/skyboxNight/front.png",
             "../textures/skyboxNight/back.png",
         };
-        skyboxNightTexture_.load(nightPathes);
 
         loadModels();
         initStaticModelMatrices();
 
         // Partie 3
+
+        // TODO: À ajouter. Aucune modification nécessaire.
         material_.allocate(&defaultMat, sizeof(Material));
         material_.setBindingIndex(0);
 
@@ -261,6 +233,7 @@ struct App : public OpenGLApplication
         }
 
         // Initialisation des paramètres de lumière des phares
+
         lightsData_.spotLights[N_STREETLIGHTS].position = glm::vec4(-1.6, 0.64, -0.45, 0.0f);
         lightsData_.spotLights[N_STREETLIGHTS].direction = glm::vec3(-10, -1, 0);
         lightsData_.spotLights[N_STREETLIGHTS].exponent = 4.0f;
@@ -327,11 +300,13 @@ struct App : public OpenGLApplication
     {
         CHECK_GL_ERROR;
         // TODO: Partie 2: Ajouter le nettoyage du tampon de stencil
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         ImGui::Begin("Scene Parameters");
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
 
+        // TODO: À ajouter.
+        // Et oui, il est désormais possible de recharger les shaders en gardant l'application ouvert.
         if (ImGui::Button("Reload Shaders"))
         {
             CHECK_GL_ERROR;
@@ -451,8 +426,6 @@ struct App : public OpenGLApplication
 
         // TODO: Ajouter le chargement du sol et de la route avec la nouvelle méthode load
         //       des modèles. Voir "model_data.hpp".
-        grass_.load(ground, sizeof(ground), planeElements, sizeof(planeElements));
-        street_.load(street, sizeof(street), planeElements, sizeof(planeElements));
     }
 
     // Méthode pour le calcul des matrices initiales des arbres et des lampadaires.
@@ -496,68 +469,27 @@ struct App : public OpenGLApplication
             areStreetlightsInitialized_ = true;
         }
 
-		glm::mat4 streetlightMVP[N_STREETLIGHTS];
-
-        streetlightTexture_.use();
-        setMaterial(streetlightMat);
         for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
         {
-            streetlightMVP[i] = projView * streetlightModelMatrices_[i];
-
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_STENCIL_TEST);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilFunc(GL_ALWAYS, 1, 0xFF);
-            glStencilMask(0xFF);
-
-            celShadingShader_.use();
-            celShadingShader_.setMatrices(streetlightMVP[i], view, streetlightModelMatrices_[i]);
+            glm::mat4 streetlightMVP = projView * streetlightModelMatrices_[i];
+            glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(streetlightMVP));
+            glUniform3f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f);
             streetlight_.draw();
-
-            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-            glStencilMask(0x00);
-            glDepthMask(GL_FALSE);
-
-            edgeEffectShader_.use();
-            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(streetlightMVP[i]));
-            streetlight_.draw();
-
-            glStencilMask(0xFF);
-            glStencilFunc(GL_ALWAYS, 0, 0xFF);
-            glDepthMask(GL_TRUE);
         }
 
         //TODO
-		streetlightLightTexture_.use();
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
+            // ...
+
             if (!isDay_)
                 setMaterial(streetlightLightMat);
             else
                 setMaterial(streetlightMat);
-
             // TODO: Dessin du mesh de la lumière.
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_STENCIL_TEST);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilFunc(GL_ALWAYS, 1, 0xFF);
-            glStencilMask(0xFF);
 
-            celShadingShader_.use();
-            celShadingShader_.setMatrices(streetlightMVP[i], view, streetlightModelMatrices_[i]);
-            streetlightLight_.draw();
-
-            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-            glStencilMask(0x00);
-            glDepthMask(GL_FALSE);
-
-            edgeEffectShader_.use();
-            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(streetlightMVP[i]));
-            streetlightLight_.draw();
-
-            glStencilMask(0xFF);
-            glStencilFunc(GL_ALWAYS, 0, 0xFF);
-            glDepthMask(GL_TRUE);
+            setMaterial(streetlightMat);
+            // TODO: Dessin du mesh du lampadaire.
         }
     }
 
@@ -592,52 +524,43 @@ struct App : public OpenGLApplication
             areTreesInitialized_ = true;
         }
 
-		treeTexture_.use();
         for (unsigned int i = 0; i < N_TREES; ++i)
         {
             glm::mat4 treeMVP = projView * treeModelMatrices_[i];
-
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_STENCIL_TEST);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilFunc(GL_ALWAYS, 1, 0xFF);
-            glStencilMask(0xFF);
-
-            celShadingShader_.use();
-            celShadingShader_.setMatrices(treeMVP, view, treeModelMatrices_[i]);
+            glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(treeMVP));
+            glUniform3f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f);
             tree_.draw();
-
-            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-            glStencilMask(0x00);
-            glDepthMask(GL_FALSE);
-
-            edgeEffectShader_.use();
-            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(treeMVP));
-            tree_.draw();
-
-            glStencilMask(0xFF);
-            glStencilFunc(GL_ALWAYS, 0, 0xFF);
-            glDepthMask(GL_TRUE);
 		}
+
+        //TODO
+        for (unsigned int i = 0; i < N_TREES; i++)
+        {
+            // ...
+        }
     }
 
     // TODO: À modifier, ajouter les textures
     void drawGround(glm::mat4& projView, glm::mat4& view)
     {
-        streetTexture_.use();
-        setMaterial(streetMat);
-        glm::mat4 streetModel = glm::scale(glm::mat4(1), glm::vec3(MAP_SIZE, 1.0f, STREET_WIDTH));
+        glm::mat4 streetModel = glm::scale(glm::mat4(1), glm::vec3(MAP_SIZE, 0.0f, STREET_WIDTH));
         glm::mat4 streetMVP = projView * streetModel;
-        celShadingShader_.setMatrices(streetMVP, view, streetModel);
+        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(streetMVP));
+        glUniform3f(colorModUniformLocation_, 1.f, 1.0f, 1.0f);
         street_.draw();
 
-        grassTexture_.use();
-		setMaterial(grassMat);
         glm::mat4 grassModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
         grassModel = glm::scale(grassModel, glm::vec3(MAP_SIZE, 1.0f, 50.0f));
         glm::mat4 grassMVP = projView * grassModel;
-        celShadingShader_.setMatrices(grassMVP, view, grassModel);
+        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(grassMVP));
+        glUniform3f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f);
         grass_.draw();
+
+        setMaterial(streetMat);
+        // TODO: Dessin de la route.
+
+        // ...
+        setMaterial(grassMat);
+        // TODO: Dessin du sol.
     }
 
     glm::mat4 getViewMatrix()
@@ -814,49 +737,30 @@ struct App : public OpenGLApplication
         glm::mat4 view = getViewMatrix();
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
-
+        
         // TODO: Dessin des éléments
         // ...
         // Penser à votre ordre de dessin, les todos sont volontairement mélangé ici.
         
-        // TODO: Dessin des fenêtres 
+        setMaterial(windowMat);
+        // TODO: Dessin des fenêtres
+        
+        setMaterial(defaultMat);
         // TODO: Dessin de l'automobile
+        
         // TODO: Dessin du skybox
+        
+        setMaterial(grassMat);
         // TODO: Dessin des arbres. Oui, ils utilisent le même matériel que le sol.
+        
+        setMaterial(streetlightMat);
         // TODO: Dessin des lampadaires.
-
-        skyShader_.use();
-        if (isDay_)
-        {
-            skyboxTexture_.use();
-        }
-        else
-        {
-            skyboxNightTexture_.use();
-        }
-        glDepthFunc(GL_LEQUAL);
-        glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view));
-        glm::mat4 mvp = proj * viewNoTranslation;
-        glUniformMatrix4fv(skyShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
-        skybox_.draw();
-        glDepthFunc(GL_LESS);
-
-        celShadingShader_.use();
-        drawGround(projView, view);
-		drawTrees(projView, view);
-
-        celShadingShader_.use();
-        drawStreetlights(projView, view);
-
-        celShadingShader_.use();
-        carTexture_.use();
-        car_.draw(projView);
-
-        carWindowTexture_.use();
-        car_.drawWindows(projView, view);
     }
 
 private:
+    GLuint colorModUniformLocation_;
+    GLuint mvpUniformLocation_;
+
     // Shaders
     EdgeEffect edgeEffectShader_;
     CelShading celShadingShader_;
