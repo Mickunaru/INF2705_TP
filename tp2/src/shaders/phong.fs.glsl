@@ -74,8 +74,8 @@ out vec4 FragColor;
 float computeSpot(in float openingAngle, in float exponent, in vec3 spotDir, in vec3 lightDir)
 {
 // TODO: Calcul de spotlight, l'algorithme classique d'OpenGL vu en classe (voir annexe).
-    float cosGamma = dot(normalize(-spotDir), normalize(lightDir));
-    float cosDelta = cos(openingAngle);
+    float cosGamma = dot(normalize(spotDir), normalize(lightDir));
+    float cosDelta = cos(radians(openingAngle));
 
     if(cosGamma > cosDelta)
     {
@@ -89,7 +89,7 @@ void main()
     // TODO: Calcul d'illumination
     vec3 N = normalize(attribsIn.normal);
     vec3 V = normalize(-lightsIn.obsPos);
-    vec3 texColor = texture(diffuseSampler, attribsIn.texCoords).rgb; // Crgb
+    vec3 texColor = texture(diffuseSampler, attribsIn.texCoords).rgb;
     
     
     // Ambiente
@@ -103,7 +103,6 @@ void main()
     vec3 R = reflect( -L, N);
     float spec = pow(max(dot(R, V), 0.0), mat.shininess);
     vec3 specular_dir = spec * dirLight.specular * mat.specular;
-    specular_dir = vec3(0);
     //const float LEVELS = 4;
 
     // Spot light
@@ -123,8 +122,9 @@ void main()
                                         L_spot);
         vec3 R_s= reflect(-L_spot, N);
         float spec_spot= pow(max(dot(R_s, V), 0.0), mat.shininess);
+
         spotResults += spotFactor * (diff_spot * spotLights[i].diffuse * texColor + 
-                                    spec_spot  + spotLights[i].specular * mat.specular);
+                                    spec_spot * spotLights[i].specular * mat.specular);
     }
 
     vec3 finalColor = ambient + diffuse_dir + specular_dir + spotResults + mat.emission;
