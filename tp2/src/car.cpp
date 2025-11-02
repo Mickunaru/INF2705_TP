@@ -100,7 +100,7 @@ void Car::update(float deltaTime)
     }
     else
     {
-        isBlinkerOn = true;
+        isBlinkerOn = false;
         blinkerTimer = 0.f;
     }
 
@@ -180,7 +180,7 @@ void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
     glDisable(GL_CULL_FACE);
 
     // Les fenêtres sont par rapport au chassi, à considérer dans votre matrice
-    // model = glm::translate(model, glm::vec3(0.0f, 0.25f, 0.0f));
+   glm::mat4 model = glm::translate(carModel, glm::vec3(0.0f, 0.25f, 0.0f));
 
     std::map<float, unsigned int> sorted;
     for (unsigned int i = 0; i < 6; i++)
@@ -194,17 +194,13 @@ void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
         sorted[distance] = i;
     }
 
-    glm::mat4 model = glm::translate(carModel, glm::vec3(0.0f, 0.25f, 0.0f));
     // TODO: Itération à l'inverse (de la plus grande distance jusqu'à la plus petit)
-    for (std::map<float, unsigned int>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+    for (auto it = sorted.rbegin(); it != sorted.rend(); ++it)
     {
-        // TODO: Dessin des fenêtres
         unsigned int i = it->second;
 
         glm::mat4 mvp = projView * model;
-
         celShadingShader->setMatrices(mvp, view, model);
-
         windows[i].draw();
     }
 
@@ -271,30 +267,30 @@ void Car::drawBlinker(glm::mat4& projView, glm::mat4& headlightMatrix, bool isLe
 
     bool isBlinkerActivated = (isLeftHeadlight && isLeftBlinkerActivated) ||
         (!isLeftHeadlight && isRightBlinkerActivated);
-    glm::vec3 color = glm::vec4(OFF_COLOR, 0.0f);
 
     // TODO: À ajouter dans votre méthode. À compléter pour la partie 3.
     Material blinkerMat =
     {
-        {0.0f, 0.0f, 0.0f, 0.0f},
-        {OFF_COLOR, 0.0f},
-        {OFF_COLOR, 0.0f},
-        {OFF_COLOR},
-        10.0f
+        glm::vec4(0.0f),                    
+        glm::vec4(OFF_COLOR, 1.0f),         
+        glm::vec4(OFF_COLOR, 1.0f),        
+        glm::vec4(OFF_COLOR, 1.0f),        
+        10.0f                                
     };
 
-    if (isBlinkerOn && isBlinkerActivated) {
-        //    TODO: Modifier le matériel pour qu'il ait l'air d'émettre de la lumière.
-        //    ... = glm::vec4(ON_COLOR, 0.0f);
-        blinkerMat.emission = glm::vec4(ON_COLOR, 0.0f);
+    if (isBlinkerOn && isBlinkerActivated)
+    {
+        blinkerMat.emission = glm::vec4(ON_COLOR, 1.0f);
     }
-    else {
-        blinkerMat.emission = glm::vec4(OFF_COLOR, 0.0f);
+    else
+    {
+        blinkerMat.emission = glm::vec4(OFF_COLOR, 1.0f);
     }
 
 
     // TODO: Envoyer le matériel au shader. Partie 3.
     material->updateData(&blinkerMat, 0, sizeof(Material));
+
     glm::mat4 model = glm::translate(headlightMatrix, glm::vec3(0.0f, 0.0f, isLeftHeadlight ? 0.06065f : -0.06065f));
     glm::mat4 mvp = projView * model;
 

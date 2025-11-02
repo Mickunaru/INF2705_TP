@@ -281,7 +281,6 @@ struct App : public OpenGLApplication
         lightsData_.spotLights[N_STREETLIGHTS + 3].exponent = 4.0f;
         lightsData_.spotLights[N_STREETLIGHTS + 3].openingAngle = radians(60.f);
 
-
         toggleStreetlight();
         updateCarLight();
 
@@ -458,14 +457,51 @@ struct App : public OpenGLApplication
     // Méthode pour le calcul des matrices initiales des arbres et des lampadaires.
     void initStaticModelMatrices()
     {
-        // ...
-        for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
-        {
-            // ...
+        // Initialize streetlights first
+        const unsigned int SEED = 123;
+        std::mt19937 rng(SEED);
+        const float STREET_OFFSET = STREET_WIDTH / 2;
+        std::uniform_real_distribution<float> distMargin(10.0f, 20.0f);
 
-            // TODO: À ajouter. C'est pour avoir la position de la lumière du lampadaire pour la partie 3.
+        float x = -MAP_SIZE / 2;
+        for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
+        {
+            x += distMargin(rng);
+            float y = -0.15f;
+            float z = 0.5f + STREET_OFFSET;
+            float angle = M_PI * 3 / 2;
+            glm::mat4 model(1);
+            model = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+            model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+            streetlightModelMatrices_[i] = model;
+
+            // Calculate light position in world space
             streetlightLightPositions[i] = glm::vec3(streetlightModelMatrices_[i] * glm::vec4(-2.77, 5.2, 0.0, 1.0));
         }
+
+        // Initialize trees
+        std::uniform_real_distribution<float> distMarginTrees(5.0f, 11.0f);
+        std::uniform_real_distribution<float> distEdgePadding(1.5f + STREET_OFFSET, 3.5f + STREET_OFFSET);
+        std::uniform_real_distribution<float> distAngle(0.0f, 2.0f * M_PI);
+        std::uniform_real_distribution<float> distScale(0.6f, 1.2f);
+
+        x = -MAP_SIZE / 2;
+        for (unsigned int i = 0; i < N_TREES; ++i)
+        {
+            x += distMarginTrees(rng);
+            float y = -0.15f;
+            float z = -distEdgePadding(rng);
+            float angle = distAngle(rng);
+            float scale = distScale(rng);
+            glm::mat4 model(1);
+            model = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+            model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::scale(model, glm::vec3(scale));
+            treeModelMatrices_[i] = model;
+        }
+
+        areStreetlightsInitialized_ = true;
+        areTreesInitialized_ = true;
     }
 
     // TODO: À modifier, ajouter les textures, et l'effet de contour.
@@ -473,29 +509,6 @@ struct App : public OpenGLApplication
     //       votre code pour faire le dessin des deux parties.
     void drawStreetlights(glm::mat4& projView, glm::mat4& view)
     {
-        if (!areStreetlightsInitialized_) {
-            const unsigned int SEED = 123;
-            std::mt19937 rng(SEED);
-
-            const float STREET_OFFSET = STREET_WIDTH / 2;
-
-            std::uniform_real_distribution<float> distMargin(10.0f, 20.0f);
-
-            float x = -MAP_SIZE / 2;
-            for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
-            {
-                x += distMargin(rng);
-                float y = -0.15f;
-                float z = 0.5f + STREET_OFFSET;
-                float angle = M_PI * 3 / 2;
-                glm::mat4 model(1);
-                model = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
-                model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-                streetlightModelMatrices_[i] = model;
-            }
-            areStreetlightsInitialized_ = true;
-        }
-
         streetlightTexture_.use();
         setMaterial(streetlightMat);
         for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
@@ -528,42 +541,14 @@ struct App : public OpenGLApplication
         }
     }
 
-    // TODO: À modifier, ajouter les textures, et l'effet de contour.
     void drawTrees(glm::mat4& projView, glm::mat4& view)
     {
-        if (!areTreesInitialized_) {
-            const unsigned int SEED = 123;
-            std::mt19937 rng(SEED);
-
-            const float STREET_OFFSET = STREET_WIDTH / 2;
-
-            std::uniform_real_distribution<float> distMargin(5.0f, 11.0f);
-            std::uniform_real_distribution<float> distEdgePadding(1.5f + STREET_OFFSET, 3.5f + STREET_OFFSET);
-            std::uniform_real_distribution<float> distAngle(0.0f, 2.0f * M_PI);
-            std::uniform_real_distribution<float> distScale(0.6f, 1.2f);
-
-            float x = -MAP_SIZE / 2;
-            for (unsigned int i = 0; i < N_TREES; ++i)
-            {
-                x += distMargin(rng);
-                float y = -0.15f;
-                float z = -distEdgePadding(rng);
-                float angle = distAngle(rng);
-                float scale = distScale(rng);
-                glm::mat4 model(1);
-                model = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
-                model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-                model = glm::scale(model, glm::vec3(scale));
-                treeModelMatrices_[i] = model;
-            }
-            areTreesInitialized_ = true;
-        }
-
+        setMaterial(grassMat); 
         treeTexture_.use();
+
         for (unsigned int i = 0; i < N_TREES; ++i)
         {
             treeMvps[i] = projView * treeModelMatrices_[i];
-
             celShadingShader_.setMatrices(treeMvps[i], view, treeModelMatrices_[i]);
             tree_.draw();
         }
@@ -734,6 +719,7 @@ struct App : public OpenGLApplication
             lightsData_.spotLights[N_STREETLIGHTS + 3].diffuse = glm::vec4(0.0f);
             lightsData_.spotLights[N_STREETLIGHTS + 3].specular = glm::vec4(0.0f);
         }
+      
     }
 
     void setMaterial(Material& mat)
