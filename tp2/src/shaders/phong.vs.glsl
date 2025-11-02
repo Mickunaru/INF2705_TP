@@ -79,21 +79,23 @@ void main()
     // TODO: Écriture des attributs de sortie
     //       Si la normale est nul, lui donner une valeur qui pointe vers le haut.
     attribsOut.texCoords = texCoords;
-    attribsOut.normal = normalize(normal == vec3(0.0) ? vec3(0.0, 1.0, 0.0) : normal);
     attribsOut.color = color;
+
+    vec3 n = (normal == vec3(0.0)) ? vec3(0.0, 1.0, 0.0) : normal;
+    attribsOut.normal = normalize(normalMatrix * n);
 
     // Lights
     vec4 posView = modelView * vec4(position, 1.0);
-    lightsOut.obsPos = posView.xyz;
+    lightsOut.obsPos = -posView.xyz;
     lightsOut.dirLightDir = normalize(mat3(view) * -dirLight.direction);
 
     // TODO: Écriture des propriétés de lumières en sortie    
     for(int i = 0; i < nSpotLights; i++)
     {
         vec3 spotPosView = vec3(view * vec4(spotLights[i].position, 1.0));
-        vec3 spotDirView = normalize(mat3(view) * -spotLights[i].direction);
+        vec3 spotDirView = normalize(mat3(view) * spotLights[i].direction);
 
-        lightsOut.spotLightsDir[i] = normalize(spotPosView - posView.xyz);
+        lightsOut.spotLightsDir[i] = spotPosView - posView.xyz;
         lightsOut.spotLightsSpotDir[i] = spotDirView;
     }
     
