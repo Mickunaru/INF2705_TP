@@ -29,7 +29,9 @@ public:
 
     void drawBorder(CarDrawResult& carDrawResult);
 
-    void drawWindows(glm::mat4& projView, glm::mat4& view); // Dessin des vitres séparées.
+    void drawWindows(glm::mat4& projView, glm::mat4& view); // Dessin des vitres séparées.v
+
+    void drawHeadlights(glm::mat4& projView);
     
 private:
     // TODO: Adapter les paramètres des méthodes privée ici au besoin, surtout pour la partie 3.  
@@ -40,7 +42,6 @@ private:
     void drawBlinker(glm::mat4& projView, glm::mat4& headlightMatrix, bool isLeftHeadlight);
     void drawLight(glm::mat4& projView, glm::mat4& headlightMatrix,  bool isFront, bool isLeft);
     void drawHeadlight(glm::mat4& projView, const glm::vec3& position, bool isFront, bool isLeft);
-    void drawHeadlights(glm::mat4& projView);
 
 	void drawFrameBorder(glm::mat4& frameMvp);
 	void drawWheelBorder(glm::mat4& wheelMvp);

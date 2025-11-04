@@ -23,14 +23,15 @@ struct Material
     glm::vec3 specular;
     GLfloat shininess;
 };
- 
+
 Car::Car()
-: position(0.0f, 0.0f, 0.0f), orientation(0.0f, 0.0f), speed(0.f)
-, wheelsRollAngle(0.f), steeringAngle(0.f)
-, isHeadlightOn(false), isBraking(false)
-, isLeftBlinkerActivated(false), isRightBlinkerActivated(false)
-, isBlinkerOn(false), blinkerTimer(0.f)
-{}
+    : position(0.0f, 0.0f, 0.0f), orientation(0.0f, 0.0f), speed(0.f)
+    , wheelsRollAngle(0.f), steeringAngle(0.f)
+    , isHeadlightOn(false), isBraking(false)
+    , isLeftBlinkerActivated(false), isRightBlinkerActivated(false)
+    , isBlinkerOn(false), blinkerTimer(0.f)
+{
+}
 
 void Car::loadModels()
 {
@@ -62,31 +63,31 @@ void Car::update(float deltaTime)
         const float LOW_SPEED_THRESHOLD = 0.1f;
         const float BRAKE_APPLIED_SPEED_THRESHOLD = 0.01f;
         const float BRAKING_FORCE = 4.f;
-    
+
         if (fabs(speed) < LOW_SPEED_THRESHOLD)
             speed = 0.f;
-            
+
         if (speed > BRAKE_APPLIED_SPEED_THRESHOLD)
             speed -= BRAKING_FORCE * deltaTime;
         else if (speed < -BRAKE_APPLIED_SPEED_THRESHOLD)
             speed += BRAKING_FORCE * deltaTime;
     }
-    
+
     const float WHEELBASE = 2.7f;
     float angularSpeed = speed * sin(-glm::radians(steeringAngle)) / WHEELBASE;
     orientation.y += angularSpeed * deltaTime;
-    
+
     glm::vec3 positionMod = glm::rotate(glm::mat4(1.0f), orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(-speed, 0.f, 0.f, 1.f);
     position += positionMod * deltaTime;
-    
+
     const float WHEEL_RADIUS = 0.2f;
     wheelsRollAngle += speed / (2.f * M_PI * WHEEL_RADIUS) * deltaTime;
-    
+
     if (wheelsRollAngle > M_PI)
         wheelsRollAngle -= 2.f * M_PI;
     else if (wheelsRollAngle < -M_PI)
         wheelsRollAngle += 2.f * M_PI;
-        
+
     if (isRightBlinkerActivated || isLeftBlinkerActivated)
     {
         const float BLINKER_PERIOD_SEC = 0.5f;
@@ -99,7 +100,7 @@ void Car::update(float deltaTime)
     }
     else
     {
-        isBlinkerOn = true;
+        isBlinkerOn = false;
         blinkerTimer = 0.f;
     }
 
@@ -114,27 +115,24 @@ void Car::update(float deltaTime)
 
 CarDrawResult Car::draw(glm::mat4& projView)
 {
-	CarDrawResult result;
+    CarDrawResult result;
 
     result.frameMvp = drawFrame(projView);
 
-	drawWheels(projView, result.wheelMvps);
+    drawWheels(projView, result.wheelMvps);
 
-    celShadingShader->use();
-	drawHeadlights(projView);
-
-	return result;
+    return result;
 }
 
 void Car::drawBorder(CarDrawResult& carDrawResult)
 {
-	drawFrameBorder(carDrawResult.frameMvp);
-	for (int i = 0; i < 4; i++)
+    drawFrameBorder(carDrawResult.frameMvp);
+    for (int i = 0; i < 4; i++)
     {
         drawWheelBorder(carDrawResult.wheelMvps[i]);
-	}
+    }
 }
-    
+
 glm::mat4 Car::drawFrame(glm::mat4& projView)
 {
     glm::mat4 model = translate(carModel, vec3(0.0f, 0.25f, 0.0f));
@@ -179,7 +177,7 @@ void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
     glDisable(GL_CULL_FACE);
 
     // Les fenêtres sont par rapport au chassi, à considérer dans votre matrice
-    // model = glm::translate(model, glm::vec3(0.0f, 0.25f, 0.0f));
+   glm::mat4 model = glm::translate(carModel, glm::vec3(0.0f, 0.25f, 0.0f));
 
     std::map<float, unsigned int> sorted;
     for (unsigned int i = 0; i < 6; i++)
@@ -193,17 +191,13 @@ void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
         sorted[distance] = i;
     }
 
-    glm::mat4 model = glm::translate(carModel, glm::vec3(0.0f, 0.25f, 0.0f));
     // TODO: Itération à l'inverse (de la plus grande distance jusqu'à la plus petit)
-    for (std::map<float, unsigned int>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+    for (auto it = sorted.rbegin(); it != sorted.rend(); ++it)
     {
-        // TODO: Dessin des fenêtres
         unsigned int i = it->second;
 
         glm::mat4 mvp = projView * model;
-
         celShadingShader->setMatrices(mvp, view, model);
-
         windows[i].draw();
     }
 
@@ -217,9 +211,9 @@ glm::mat4 Car::drawWheel(glm::mat4& projView, const glm::vec3& wheelPos, bool is
 
     float axisOffset = isLeft ? 0.10124f : -0.10124f;
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, axisOffset));
-    
+
     if (isLeft)
-		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0, 1, 0));
+        model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0, 1, 0));
 
     if (isFront)
         model = glm::rotate(model, -glm::radians(steeringAngle), glm::vec3(0, 1, 0));
@@ -228,16 +222,16 @@ glm::mat4 Car::drawWheel(glm::mat4& projView, const glm::vec3& wheelPos, bool is
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, -axisOffset));
     glm::mat4 mvp = projView * model;
 
-	glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	glStencilMask(0xFF);
+    glStencilMask(0xFF);
 
     celShadingShader->setMatrices(mvp, carModel, model);
     wheel_.draw();
 
-	return mvp;
+    return mvp;
 }
 
 void Car::drawWheelBorder(glm::mat4& wheelMvp)
@@ -250,13 +244,12 @@ void Car::drawWheels(glm::mat4& projView, glm::mat4 outWheelMvps[4])
 {
     glm::vec3 WHEEL_POSITIONS[] =
     {
-		glm::vec3(-1.29f, 0.245f, -0.57f), //Front right
-		glm::vec3(-1.29f, 0.245f,  0.38f), //Front left
-        glm::vec3( 1.4f , 0.245f, -0.57f), //Rear right
-        glm::vec3( 1.4f , 0.245f,  0.38f)  //Rear left
+        glm::vec3(-1.29f, 0.245f, -0.57f), //Front right
+        glm::vec3(-1.29f, 0.245f,  0.38f), //Front left
+        glm::vec3(1.4f , 0.245f, -0.57f), //Rear right
+        glm::vec3(1.4f , 0.245f,  0.38f)  //Rear left
     };
 
-    celShadingShader->use();
     outWheelMvps[0] = drawWheel(projView, WHEEL_POSITIONS[0], true, false);
     outWheelMvps[1] = drawWheel(projView, WHEEL_POSITIONS[1], true, true);
     outWheelMvps[2] = drawWheel(projView, WHEEL_POSITIONS[2], false, false);
@@ -268,31 +261,32 @@ void Car::drawBlinker(glm::mat4& projView, glm::mat4& headlightMatrix, bool isLe
     const glm::vec3 ON_COLOR(1.0f, 0.7f, 0.3f);
     const glm::vec3 OFF_COLOR(0.5f, 0.35f, 0.15f);
 
-    bool isBlinkerActivated = (isLeftHeadlight  && isLeftBlinkerActivated) ||
-                              (!isLeftHeadlight && isRightBlinkerActivated);
-    glm::vec3 color = glm::vec4(OFF_COLOR, 0.0f);
+    bool isBlinkerActivated = (isLeftHeadlight && isLeftBlinkerActivated) ||
+        (!isLeftHeadlight && isRightBlinkerActivated);
 
     // TODO: À ajouter dans votre méthode. À compléter pour la partie 3.
     Material blinkerMat =
     {
-        {0.0f, 0.0f, 0.0f, 0.0f},
-        {OFF_COLOR, 0.0f},
-        {OFF_COLOR, 0.0f},
-        {OFF_COLOR},
-        10.0f
+        glm::vec4(0.0f),                    
+        glm::vec4(OFF_COLOR, 1.0f),         
+        glm::vec4(OFF_COLOR, 1.0f),        
+        glm::vec4(OFF_COLOR, 1.0f),        
+        10.0f                                
     };
 
-    if (isBlinkerOn && isBlinkerActivated) {
-        //    TODO: Modifier le matériel pour qu'il ait l'air d'émettre de la lumière.
-        //    ... = glm::vec4(ON_COLOR, 0.0f);
-        blinkerMat.emission = glm::vec4(ON_COLOR, 0.0f);
-    } else {
-        blinkerMat.emission = glm::vec4(OFF_COLOR, 0.0f);
+    if (isBlinkerOn && isBlinkerActivated)
+    {
+        blinkerMat.emission = glm::vec4(ON_COLOR, 1.0f);
     }
-    
+    else
+    {
+        blinkerMat.emission = glm::vec4(OFF_COLOR, 1.0f);
+    }
+
 
     // TODO: Envoyer le matériel au shader. Partie 3.
     material->updateData(&blinkerMat, 0, sizeof(Material));
+
     glm::mat4 model = glm::translate(headlightMatrix, glm::vec3(0.0f, 0.0f, isLeftHeadlight ? 0.06065f : -0.06065f));
     glm::mat4 mvp = projView * model;
 
@@ -303,10 +297,10 @@ void Car::drawBlinker(glm::mat4& projView, glm::mat4& headlightMatrix, bool isLe
 
 void Car::drawLight(glm::mat4& projView, glm::mat4& headlightMatrix, bool isFront, bool isLeft)
 {
-    const glm::vec3 FRONT_ON_COLOR (1.0f, 1.0f, 1.0f);
+    const glm::vec3 FRONT_ON_COLOR(1.0f, 1.0f, 1.0f);
     const glm::vec3 FRONT_OFF_COLOR(0.5f, 0.5f, 0.5f);
-    const glm::vec3 REAR_ON_COLOR  (1.0f, 0.1f, 0.1f);
-    const glm::vec3 REAR_OFF_COLOR (0.5f, 0.1f, 0.1f);
+    const glm::vec3 REAR_ON_COLOR(1.0f, 0.1f, 0.1f);
+    const glm::vec3 REAR_OFF_COLOR(0.5f, 0.1f, 0.1f);
 
     Material lightFrontMat =
     {
@@ -349,7 +343,7 @@ void Car::drawLight(glm::mat4& projView, glm::mat4& headlightMatrix, bool isFron
     }
 
     glm::mat4 mvp = projView * model;
-	celShadingShader->setMatrices(mvp, headlightMatrix, model);
+    celShadingShader->setMatrices(mvp, headlightMatrix, model);
 
     light_.draw();
 }
@@ -367,8 +361,8 @@ void Car::drawHeadlights(glm::mat4& projView)
     {
         glm::vec3(-2.0019f, 0.64f, -0.45f), //Front right
         glm::vec3(-2.0019f, 0.64f,  0.45f), //Front left, 
-        glm::vec3( 2.0019f, 0.64f, -0.45f), //Rear right, 
-        glm::vec3( 2.0019f, 0.64f,  0.45f)  //Rear left, 
+        glm::vec3(2.0019f, 0.64f, -0.45f), //Rear right, 
+        glm::vec3(2.0019f, 0.64f,  0.45f)  //Rear left, 
     };
 
     drawHeadlight(projView, HEADLIGHT_POSITIONS[0], true, false);
