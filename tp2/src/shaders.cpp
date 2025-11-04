@@ -16,7 +16,6 @@ void EdgeEffect::load()
 
 void EdgeEffect::getAllUniformLocations()
 {
-    // TODO: Initialiser les valeurs de uniform location en attributs
     mvpULoc = glGetUniformLocation(id_, "mvp");
 }
 
@@ -34,7 +33,6 @@ void Sky::load()
 
 void Sky::getAllUniformLocations()
 {
-    // TODO: Initialiser les valeurs de uniform location en attributs
     mvpULoc = glGetUniformLocation(id_, "mvp");
 }
 

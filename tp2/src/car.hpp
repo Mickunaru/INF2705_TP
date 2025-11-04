@@ -25,16 +25,15 @@ public:
     
     void update(float deltaTime);
     
-    CarDrawResult draw(glm::mat4& projView); // À besoin de la matrice de vue séparément, pour la partie 3.
+    CarDrawResult draw(glm::mat4& projView);
 
     void drawBorder(CarDrawResult& carDrawResult);
 
-    void drawWindows(glm::mat4& projView, glm::mat4& view); // Dessin des vitres séparées.v
+    void drawWindows(glm::mat4& projView, glm::mat4& view);
 
     void drawHeadlights(glm::mat4& projView);
     
 private:
-    // TODO: Adapter les paramètres des méthodes privée ici au besoin, surtout pour la partie 3.  
     glm::mat4 drawFrame(glm::mat4& projView);
     glm::mat4 drawWheel(glm::mat4& projView, const glm::vec3& wheelPos, bool isFront, bool isLeft);
     void drawWheels(glm::mat4& projView, glm::mat4 outWheelMvps[4]);

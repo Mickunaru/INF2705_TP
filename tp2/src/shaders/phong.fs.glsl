@@ -74,8 +74,8 @@ float computeSpot(in float openingAngle, in float exponent, in vec3 spotDir, in 
 {
     float spotFactor = 0.0;
     
-    vec3 Ln = normalize(spotDir);      // Direction spotlight is pointing
-    vec3 L  = normalize(-lightDir);     // Direction FROM light TO surface (reversed!)
+    vec3 Ln = normalize(spotDir);
+    vec3 L  = normalize(-lightDir);
     
     float cosGamma = dot(L, Ln);
     float cosDelta = cos(openingAngle);

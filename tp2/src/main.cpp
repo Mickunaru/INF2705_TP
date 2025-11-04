@@ -153,34 +153,14 @@ struct App : public OpenGLApplication
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
 
-        // Partie 1
-
-        // TODO:
-        // Création des shaders program.
-        // Fait appel à la méthode "create()".
         edgeEffectShader_.create();
         celShadingShader_.create();
         skyShader_.create();
 
-        // TODO: À ajouter.
         car_.edgeEffectShader = &edgeEffectShader_;
         car_.celShadingShader = &celShadingShader_;
         car_.material = &material_;
 
-        // TODO: Chargement des textures, ainsi que la configuration de leurs paramètres.
-        //
-        //       Les textures ne se répètent pas, sauf le sol, la route, les arbres et les lampadaires.
-        //
-        //       Les textures ont un fini lisse, à l’exception des arbres, des lumières de lampadaire et
-        //       des fenêtres de la voiture.
-        //       
-        //       Le mipmap __ne doit pas__ être activé pour toutes les textures, seulement le sol et la route.
-        //
-
-        // Simplement pour réduire l'effet "négatif" du mipmap qui rend la
-        // texture flou trop près.
-        // streetTexture_.use();
-        // glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
         grassTexture_.load("../textures/grass.jpg");
         grassTexture_.setWrap(GL_REPEAT);
         grassTexture_.setFiltering(GL_LINEAR);
@@ -215,8 +195,6 @@ struct App : public OpenGLApplication
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        // TODO: Chargement des deux skyboxes.
-
         const char* pathes[] = {
             "../textures/skybox/Daylight Box_Right.bmp",
             "../textures/skybox/Daylight Box_Left.bmp",
@@ -240,7 +218,6 @@ struct App : public OpenGLApplication
         loadModels();
         initStaticModelMatrices();
 
-        // Partie 3
         material_.allocate(&defaultMat, sizeof(Material));
         material_.setBindingIndex(0);
 
@@ -254,13 +231,12 @@ struct App : public OpenGLApplication
 
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
-            lightsData_.spotLights[i].position = glm::vec4(streetlightLightPositions[i], 1.0f); // FIXED: w=1
+            lightsData_.spotLights[i].position = glm::vec4(streetlightLightPositions[i], 1.0f);
             lightsData_.spotLights[i].direction = glm::vec3(0, -1, 0);
             lightsData_.spotLights[i].exponent = 6.0f;
-            lightsData_.spotLights[i].openingAngle = glm::radians(60.0f); // Also convert to radians!
+            lightsData_.spotLights[i].openingAngle = glm::radians(60.0f);
         }
 
-        // Initialisation des paramètres de lumière des phares
         lightsData_.spotLights[N_STREETLIGHTS].position = glm::vec4(-1.6, 0.64, -0.45, 0.0f);
         lightsData_.spotLights[N_STREETLIGHTS].direction = glm::vec3(-10, -1, 0);
         lightsData_.spotLights[N_STREETLIGHTS].exponent = 4.0f;
@@ -321,11 +297,9 @@ struct App : public OpenGLApplication
         }
     }
 
-    // Appelée à chaque trame. Le buffer swap est fait juste après.
     void drawFrame() override
     {
         CHECK_GL_ERROR;
-        // TODO: Partie 2: Ajouter le nettoyage du tampon de stencil
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         ImGui::Begin("Scene Parameters");
@@ -447,17 +421,12 @@ struct App : public OpenGLApplication
         streetlight_.load("../models/streetlight.ply");
         streetlightLight_.load("../models/streetlight_light.ply");
         skybox_.load("../models/skybox.ply");
-
-        // TODO: Ajouter le chargement du sol et de la route avec la nouvelle méthode load
-        //       des modèles. Voir "model_data.hpp".
         grass_.load(ground, sizeof(ground), planeElements, sizeof(planeElements));
         street_.load(street, sizeof(street), planeElements, sizeof(planeElements));
     }
 
-    // Méthode pour le calcul des matrices initiales des arbres et des lampadaires.
     void initStaticModelMatrices()
     {
-        // Initialize streetlights first
         const unsigned int SEED = 123;
         std::mt19937 rng(SEED);
         const float STREET_OFFSET = STREET_WIDTH / 2;
@@ -474,12 +443,9 @@ struct App : public OpenGLApplication
             model = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
             model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
             streetlightModelMatrices_[i] = model;
-
-            // Calculate light position in world space
             streetlightLightPositions[i] = glm::vec3(streetlightModelMatrices_[i] * glm::vec4(-2.77, 5.2, 0.0, 1.0));
         }
 
-        // Initialize trees
         std::uniform_real_distribution<float> distMarginTrees(5.0f, 11.0f);
         std::uniform_real_distribution<float> distEdgePadding(1.5f + STREET_OFFSET, 3.5f + STREET_OFFSET);
         std::uniform_real_distribution<float> distAngle(0.0f, 2.0f * M_PI);
@@ -504,9 +470,6 @@ struct App : public OpenGLApplication
         areTreesInitialized_ = true;
     }
 
-    // TODO: À modifier, ajouter les textures, et l'effet de contour.
-    //       De plus, le modèle a été séparé en deux (pour la partie 3), adapter
-    //       votre code pour faire le dessin des deux parties.
     void drawStreetlights(glm::mat4& projView, glm::mat4& view)
     {
         streetlightTexture_.use();
@@ -561,7 +524,6 @@ struct App : public OpenGLApplication
         }
     }
 
-    // TODO: À modifier, ajouter les textures
     void drawStreet(glm::mat4& projView, glm::mat4& view)
     {
         glm::mat4 streetModel = glm::scale(glm::mat4(1), glm::vec3(MAP_SIZE, 1.0f, STREET_WIDTH));
@@ -721,13 +683,9 @@ struct App : public OpenGLApplication
 
     void setMaterial(Material& mat)
     {
-        // Ça vous donne une idée de comment utiliser les ubo dans car.cpp.
         material_.updateData(&mat, 0, sizeof(Material));
     }
 
-    // TODO: À ajouter et modifier.
-    //       Ajouter les textures, les skyboxes, les fenêtres de la voiture,
-    //       les effets de contour, etc.
     void sceneMain()
     {
         ImGui::Begin("Scene Parameters");
@@ -757,16 +715,6 @@ struct App : public OpenGLApplication
         glm::mat4 view = getViewMatrix();
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
-
-        // TODO: Dessin des éléments
-        // ...
-        // Penser à votre ordre de dessin, les todos sont volontairement mélangé ici.
-
-        // TODO: Dessin des fenêtres 
-        // TODO: Dessin de l'automobile
-        // TODO: Dessin du skybox
-        // TODO: Dessin des arbres. Oui, ils utilisent le même matériel que le sol.
-        // TODO: Dessin des lampadaires.
 
         skyShader_.use();
         if (isDay_)
@@ -832,12 +780,10 @@ struct App : public OpenGLApplication
     }
 
 private:
-    // Shaders
     EdgeEffect edgeEffectShader_;
     CelShading celShadingShader_;
     Sky skyShader_;
 
-    // Textures
     Texture2D grassTexture_;
     Texture2D streetTexture_;
     Texture2D carTexture_;
@@ -848,14 +794,12 @@ private:
     TextureCubeMap skyboxTexture_;
     TextureCubeMap skyboxNightTexture_;
 
-    // Uniform buffers
     UniformBuffer material_;
     UniformBuffer lights_;
 
     struct {
         DirectionalLight dirLight;
         SpotLight spotLights[16];
-        //PointLight pointLights[4];
     } lightsData_;
 
     bool isDay_;
@@ -882,7 +826,6 @@ private:
     glm::mat4 treeMvps[N_TREES];
     glm::mat4 streetlightMvps[N_STREETLIGHTS];
 
-    // Imgui var
     const char* const SCENE_NAMES[1] = {
         "Main scene"
     };
