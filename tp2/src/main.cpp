@@ -805,7 +805,7 @@ struct App : public OpenGLApplication
         carWindowTexture_.use();
         car_.drawWindows(projView, view);
 
-        carTexture_.use();
+        //carTexture_.use();
         car_.drawHeadlights(projView);
 
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
