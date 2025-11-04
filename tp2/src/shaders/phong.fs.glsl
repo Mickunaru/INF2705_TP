@@ -95,15 +95,15 @@ void main()
 
     const float LEVELS = 4;
 
-     color += dirLight.ambient * mat.ambient;
+    color += dirLight.ambient * mat.ambient;
 
-     vec3 L = normalize(lightsIn.dirLightDir);
+    vec3 L = normalize(lightsIn.dirLightDir);
     float diffuseIntensity = max(dot(N, L), 0.0);
 
     diffuseIntensity = floor(diffuseIntensity * LEVELS) / LEVELS;
     color += dirLight.diffuse * mat.diffuse * diffuseIntensity;
 
-     if(diffuseIntensity > 0.0)
+    if(diffuseIntensity > 0.0)
     {
         vec3 R = reflect(-L, N);
         float specularIntensity = max(dot(R, V), 0.0);

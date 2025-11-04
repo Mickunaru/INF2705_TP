@@ -796,7 +796,6 @@ struct App : public OpenGLApplication
         glStencilFunc(GL_ALWAYS, 1, 0xFF);
         glStencilMask(0xFF);
 
-
         drawTrees(projView, view);
         drawStreetlights(projView, view);
 
@@ -805,6 +804,9 @@ struct App : public OpenGLApplication
 
         carWindowTexture_.use();
         car_.drawWindows(projView, view);
+
+        carTexture_.use();
+        car_.drawHeadlights(projView);
 
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         glStencilMask(0x00);

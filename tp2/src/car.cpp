@@ -121,9 +121,6 @@ CarDrawResult Car::draw(glm::mat4& projView)
 
     drawWheels(projView, result.wheelMvps);
 
-    celShadingShader->use();
-    drawHeadlights(projView);
-
     return result;
 }
 
@@ -253,7 +250,6 @@ void Car::drawWheels(glm::mat4& projView, glm::mat4 outWheelMvps[4])
         glm::vec3(1.4f , 0.245f,  0.38f)  //Rear left
     };
 
-    celShadingShader->use();
     outWheelMvps[0] = drawWheel(projView, WHEEL_POSITIONS[0], true, false);
     outWheelMvps[1] = drawWheel(projView, WHEEL_POSITIONS[1], true, true);
     outWheelMvps[2] = drawWheel(projView, WHEEL_POSITIONS[2], false, false);
