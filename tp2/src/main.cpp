@@ -510,7 +510,6 @@ struct App : public OpenGLApplication
     void drawStreetlights(glm::mat4& projView, glm::mat4& view)
     {
         streetlightTexture_.use();
-        setMaterial(streetlightMat);
         for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
         {
             streetlightMvps[i] = projView * streetlightModelMatrices_[i];
@@ -543,7 +542,6 @@ struct App : public OpenGLApplication
 
     void drawTrees(glm::mat4& projView, glm::mat4& view)
     {
-        setMaterial(grassMat); 
         treeTexture_.use();
 
         for (unsigned int i = 0; i < N_TREES; ++i)
@@ -564,17 +562,16 @@ struct App : public OpenGLApplication
     }
 
     // TODO: À modifier, ajouter les textures
-    void drawGround(glm::mat4& projView, glm::mat4& view)
+    void drawStreet(glm::mat4& projView, glm::mat4& view)
     {
-        streetTexture_.use();
-        setMaterial(streetMat);
         glm::mat4 streetModel = glm::scale(glm::mat4(1), glm::vec3(MAP_SIZE, 1.0f, STREET_WIDTH));
         glm::mat4 streetMVP = projView * streetModel;
         celShadingShader_.setMatrices(streetMVP, view, streetModel);
         street_.draw();
+    }
 
-        grassTexture_.use();
-        setMaterial(grassMat);
+    void drawGrass(glm::mat4& projView, glm::mat4& view)
+    {
         glm::mat4 grassModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
         grassModel = glm::scale(grassModel, glm::vec3(MAP_SIZE, 1.0f, 50.0f));
         glm::mat4 grassMVP = projView * grassModel;
@@ -788,7 +785,14 @@ struct App : public OpenGLApplication
         glDepthFunc(GL_LESS);
 
         celShadingShader_.use();
-        drawGround(projView, view);
+
+        streetTexture_.use();
+        setMaterial(streetMat);
+        drawStreet(projView, view);
+
+        grassTexture_.use();
+        setMaterial(grassMat);
+        drawGrass(projView, view);
 
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_STENCIL_TEST);
@@ -797,15 +801,20 @@ struct App : public OpenGLApplication
         glStencilMask(0xFF);
 
         drawTrees(projView, view);
+
+        setMaterial(streetlightMat);
         drawStreetlights(projView, view);
 
         carTexture_.use();
+        setMaterial(defaultMat);
         CarDrawResult carDrawResult = car_.draw(projView);
 
         carWindowTexture_.use();
+        setMaterial(windowMat);
         car_.drawWindows(projView, view);
 
-        //carTexture_.use();
+        carTexture_.use();
+        setMaterial(defaultMat);
         car_.drawHeadlights(projView);
 
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
