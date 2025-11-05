@@ -65,6 +65,14 @@ struct SpotLight
     GLfloat padding[3];
 };
 
+struct BezierCurve
+{
+    glm::vec3 p0;
+    glm::vec3 c0;
+    glm::vec3 c1;
+    glm::vec3 p1;
+};
+
 // Matériels
 
 Material defaultMat =
@@ -121,6 +129,50 @@ Material windowMat =
     2.0f
 };
 
+Material bezierMat =
+{
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f},
+    0.0f
+};
+
+BezierCurve curves[5] =
+{
+    {
+        glm::vec3(-28.7912, 1.4484, -1.7349),
+        glm::vec3(-28.0654, 1.4484, 6.1932),
+        glm::vec3(-10.3562, 8.8346, 6.5997),
+        glm::vec3(-7.6701, 8.8346, 8.9952)
+    },
+    {
+        glm::vec3(-7.6701, 8.8346, 8.9952),
+        glm::vec3(-3.9578, 8.8346, 12.3057),
+        glm::vec3(-2.5652, 2.4770, 13.6914),
+        glm::vec3(2.5079, 1.4484, 11.6581)
+    },
+    {
+        glm::vec3(2.5079, 1.4484, 11.6581),
+        glm::vec3(7.5810, 0.4199, 9.6248),
+        glm::vec3(16.9333, 3.3014, 5.7702),
+        glm::vec3(28.4665, 6.6072, 3.9096)
+    },
+    {
+        glm::vec3(28.4665, 6.6072, 3.9096),
+        glm::vec3(39.9998, 9.9131, 2.0491),
+        glm::vec3(30.8239, 5.7052, -15.2108),
+        glm::vec3(21.3852, 5.7052, -9.0729)
+    },
+    {
+        glm::vec3(21.3852, 5.7052, -9.0729),
+        glm::vec3(11.9464, 5.7052, -2.9349),
+        glm::vec3(-1.0452, 1.4484, -12.4989),
+        glm::vec3(-12.2770, 1.4484, -13.2807)
+    }
+};
+
+
 struct App : public OpenGLApplication
 {
     App()
@@ -152,6 +204,11 @@ struct App : public OpenGLApplication
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
+        glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
+
+        // TODO: Création des nouveaux shaders
+
+        // TODO: Initialisation des meshes (béziers, patches)
 
         edgeEffectShader_.create();
         celShadingShader_.create();
@@ -559,8 +616,10 @@ struct App : public OpenGLApplication
             return mat4(1);
         }
 
+        // TODO: Pertinent de modifier la distance ici.
+        const float far = 300.f;
         float aspect = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
-        glm::mat4 projection = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(70.0f), aspect, 0.1f, far);
 
         return projection;
     }
@@ -689,6 +748,14 @@ struct App : public OpenGLApplication
     void sceneMain()
     {
         ImGui::Begin("Scene Parameters");
+        // TODO: À ajouter
+        ImGui::SliderInt("Bezier Number Of Points", (int*)&bezierNPoints, 0, 16);
+        if (ImGui::Button("Animate Camera"))
+        {
+            isAnimatingCamera = true;
+            cameraMode = 1;
+        }
+        //
         if (ImGui::Button("Toggle Day/Night"))
         {
             isDay_ = !isDay_;
@@ -705,6 +772,35 @@ struct App : public OpenGLApplication
         ImGui::Checkbox("Right Blinker", &car_.isRightBlinkerActivated);
         ImGui::Checkbox("Brake", &car_.isBraking);
         ImGui::End();
+
+        if (isAnimatingCamera)
+        {
+            if (cameraAnimation < 5)
+            {
+                // TODO: Animation de la caméra
+                // cameraPosition_ = ...
+
+                cameraAnimation += deltaTime_ / 3.0;
+            }
+            else
+            {
+                // Remise à 0 de l'orientation
+                glm::vec3 diff = car_.position - cameraPosition_;
+                cameraOrientation_.y = M_PI + atan2(diff.z, diff.x);
+
+                cameraAnimation = 0.f;
+                isAnimatingCamera = false;
+                cameraMode = 0;
+            }
+        }
+
+        bool hasNumberOfSidesChanged = bezierNPoints != oldBezierNPoints;
+        if (hasNumberOfSidesChanged)
+        {
+            oldBezierNPoints = bezierNPoints;
+
+            // TODO: Calcul et mise à jour de la courbe
+        }
 
         updateCameraInput();
         car_.update(deltaTime_);
@@ -732,7 +828,13 @@ struct App : public OpenGLApplication
         skybox_.draw();
         glDepthFunc(GL_LESS);
 
+        // TODO: Dessin du gazon
+        // glDraw...
+
         celShadingShader_.use();
+
+        // TODO: Dessin de la courbe
+        // glDraw...
 
         streetTexture_.use();
         setMaterial(streetMat);
@@ -838,6 +940,16 @@ private:
 
     const float MAP_SIZE = 100.0f;
     const float STREET_WIDTH = 5.0f;
+
+    // TODO: Ajouter ces attributs
+    unsigned int bezierNPoints = 3;
+    unsigned int oldBezierNPoints = 0;
+
+    int cameraMode = 0;
+    float cameraAnimation = 0.f;
+    bool isAnimatingCamera = false;
+
+    // TODO: Ajouter les attributs de vbo, ebo, vao nécessaire
 };
 
 
