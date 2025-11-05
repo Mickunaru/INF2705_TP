@@ -21,6 +21,9 @@
     <Filter Include="Source Files\imgui">
       <UniqueIdentifier>{45a5a826-0b36-44d3-abd2-c7b8d299f6aa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Texture Source Files">
+      <UniqueIdentifier>{2994aebd-bc20-4fbc-bd71-d050c9be9b69}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -50,6 +53,18 @@
     <ClCompile Include="car.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="shader_program.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="textures.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="uniform_buffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt">
@@ -61,11 +76,22 @@
     <None Include="CMakeLists.txt">
       <Filter>VSCode Files</Filter>
     </None>
-    <None Include="README.md" />
-    <None Include="shaders\transform.fs.glsl">
+    <None Include="shaders\edge.fs.glsl">
       <Filter>Shader Source Files</Filter>
     </None>
-    <None Include="shaders\transform.vs.glsl">
+    <None Include="shaders\edge.vs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\phong.fs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\phong.vs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\sky.fs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\sky.vs.glsl">
       <Filter>Shader Source Files</Filter>
     </None>
   </ItemGroup>
@@ -79,5 +105,52 @@
     <ClInclude Include="..\inf2705\utils.hpp">
       <Filter>Header Files\inf2705</Filter>
     </ClInclude>
+    <ClInclude Include="car.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="model.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="model_data.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shader_program.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="textures.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="uniform_buffer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\textures\car.png">
+      <Filter>Texture Source Files</Filter>
+    </Image>
+    <Image Include="..\textures\grass.jpg">
+      <Filter>Texture Source Files</Filter>
+    </Image>
+    <Image Include="..\textures\street.jpg">
+      <Filter>Texture Source Files</Filter>
+    </Image>
+    <Image Include="..\textures\streetlight.jpg">
+      <Filter>Texture Source Files</Filter>
+    </Image>
+    <Image Include="..\textures\streetlight_light.png">
+      <Filter>Texture Source Files</Filter>
+    </Image>
+    <Image Include="..\textures\tree.jpg">
+      <Filter>Texture Source Files</Filter>
+    </Image>
+    <Image Include="..\textures\window.png">
+      <Filter>Texture Source Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>
