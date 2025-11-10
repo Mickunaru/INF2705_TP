@@ -1,7 +1,6 @@
 #version 330 core
 
-#define MAX_SPOT_LIGHTS 8
-#define MAX_POINT_LIGHTS 4
+#define MAX_SPOT_LIGHTS 9
 
 in ATTRIBS_VS_OUT
 {

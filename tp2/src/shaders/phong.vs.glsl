@@ -5,8 +5,7 @@ layout (location = 1) in vec3 color;
 layout (location = 2) in vec3 normal;
 layout (location = 3) in vec2 texCoords;
 
-#define MAX_SPOT_LIGHTS 8
-#define MAX_POINT_LIGHTS 4
+#define MAX_SPOT_LIGHTS 9
 
 out ATTRIBS_VS_OUT
 {
