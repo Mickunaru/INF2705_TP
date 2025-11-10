@@ -322,6 +322,10 @@ struct App : public OpenGLApplication
         lights_.allocate(&lightsData_, sizeof(lightsData_));
         lights_.setBindingIndex(1);
 
+        glGenVertexArrays(1, &vao);
+        glGenBuffers(1, &vbo);
+        glGenBuffers(1, &ebo);
+
         CHECK_GL_ERROR;
     }
 
@@ -598,6 +602,57 @@ struct App : public OpenGLApplication
         grass_.draw();
     }
 
+    void calculateCurveVertices(unsigned int nPoints)
+    {
+		curveVertices.clear();
+        indices.clear();
+
+        unsigned int currentIndex = 0;
+
+        for (unsigned int j = 0; j < 5; ++j)
+        {
+            BezierCurve curve = curves[j];
+            unsigned int start = (j == 0) ? 0 : 1;
+            for (unsigned int i = start; i <= nPoints; ++i)
+            {
+                float t = static_cast<float>(i) / static_cast<float>(nPoints);
+                float u = 1.0f - t;
+                glm::vec3 position =
+                    u * u * u * curve.p0 +
+                    3 * t * u * u * curve.c0 +
+                    3 * t * t * u * curve.c1 +
+                    t * t * t * curve.p1;
+                curveVertices.push_back({ position, glm::vec4(1.0f) });
+                indices.push_back(currentIndex++);
+            }
+        }
+
+        indices.push_back(0);
+    }
+
+    void drawCurve(glm::mat4& projView, glm::mat4& view)
+    {
+        glBindVertexArray(vao);
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, curveVertices.size() * sizeof(Vertex), curveVertices.data(), GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 mvp = projView * model;
+        celShadingShader_.setMatrices(mvp, view, model);
+
+        glDrawElements(GL_LINE_STRIP, indices.size(), GL_UNSIGNED_INT, 0);
+	}
+
     glm::mat4 getViewMatrix()
     {
         glm::mat4 view = glm::mat4(1.0);
@@ -800,6 +855,7 @@ struct App : public OpenGLApplication
             oldBezierNPoints = bezierNPoints;
 
             // TODO: Calcul et mise à jour de la courbe
+            calculateCurveVertices(bezierNPoints);
         }
 
         updateCameraInput();
@@ -835,6 +891,9 @@ struct App : public OpenGLApplication
 
         // TODO: Dessin de la courbe
         // glDraw...
+
+        setMaterial(bezierMat);
+        drawCurve(projView, view);
 
         streetTexture_.use();
         setMaterial(streetMat);
@@ -950,6 +1009,9 @@ private:
     bool isAnimatingCamera = false;
 
     // TODO: Ajouter les attributs de vbo, ebo, vao nécessaire
+    GLuint vao, vbo, ebo;
+    std::vector<Vertex> curveVertices;
+    std::vector<unsigned int> indices;
 };
 
 
