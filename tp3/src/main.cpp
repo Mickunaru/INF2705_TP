@@ -836,6 +836,22 @@ struct App : public OpenGLApplication
                 // cameraPosition_ = ...
 
                 cameraAnimation += deltaTime_ / 3.0;
+
+				float progress = cameraAnimation / 5.0f;
+				unsigned int totalNPoints = bezierNPoints * 5;
+                float tGlobal = progress * (totalNPoints - 1);
+                unsigned int idx = static_cast<unsigned int>(tGlobal);
+                idx = std::min(idx, bezierNPoints * 5 - 2);
+				float t = tGlobal - idx;
+
+                glm::vec3 start = curveVertices[idx].position;
+                glm::vec3 end = curveVertices[idx + 1].position;
+
+                cameraPosition_ = glm::mix(start, end, t);
+
+                glm::vec3 diff = cameraPosition_ - car_.position;
+                cameraOrientation_.y = atan2(diff.x, diff.z);
+                cameraOrientation_.x = atan2(-diff.y, glm::length(glm::vec2(diff.x, diff.z)));
             }
             else
             {
