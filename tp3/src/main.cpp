@@ -31,7 +31,7 @@ using namespace glm;
 
 struct Vertex {
     glm::vec3 position;
-    glm::vec4 color;
+    glm::vec4 color; // We might need to remove this as its not used
 };
 
 struct Material
@@ -172,7 +172,6 @@ BezierCurve curves[5] =
     }
 };
 
-
 struct App : public OpenGLApplication
 {
     App()
@@ -209,6 +208,10 @@ struct App : public OpenGLApplication
         // TODO: Création des nouveaux shaders
 
         // TODO: Initialisation des meshes (béziers, patches)
+        // TP1 polygone; au lieu de faire le point tu fait la forme pour faire un plan
+        //calculateCurveVertices(bezierNPoints);
+        //calculatePatchesVertices(patchesNPoints);
+
 
         edgeEffectShader_.create();
         celShadingShader_.create();
@@ -372,6 +375,7 @@ struct App : public OpenGLApplication
             edgeEffectShader_.reload();
             celShadingShader_.reload();
             skyShader_.reload();
+            //grassShader_.reload();
 
             setLightingUniform();
             CHECK_GL_ERROR;
@@ -628,6 +632,29 @@ struct App : public OpenGLApplication
         }
     }
 
+    void calculatePatchesVertices(unsigned int nPoints) {
+        patchesVertices.clear();
+        indices2.clear();
+
+        unsigned int currentIndex = 0;
+
+        for (unsigned int j = 0; j < 5; ++j)
+        {
+            //Vertex patch = patches[j]; // Puisquon a seulement besoin de pos? 
+            // Ajouter un boucle for pour les coords
+            // On peut commencer par ajouter un grand caree un bord et ensuite dans lautre bord
+            unsigned int start = (j == 0) ? 0 : 1;
+            for (unsigned int i = start; i <= nPoints + 1; ++i)
+            {
+                //float t = static_cast<float>(i) / static_cast<float>(nPoints + 1);
+                //float u = 1.0f - t;
+                //glm::vec3 position = patch; 
+                //patchesVertices.push_back({ position, glm::vec4(1.0f) }); // Enlever color? 
+                //indices2.push_back(currentIndex++);
+            }
+        }
+    }
+
     void drawCurve(glm::mat4& projView, glm::mat4& view)
     {
         glBindVertexArray(vao);
@@ -649,6 +676,31 @@ struct App : public OpenGLApplication
         celShadingShader_.setMatrices(mvp, view, model);
 
         glDrawElements(GL_LINE_STRIP, indices.size(), GL_UNSIGNED_INT, 0);
+    }
+
+    void drawPatch() {
+
+        glGenVertexArrays(1, &vao);
+        glGenBuffers(1, &vbo);
+        glGenBuffers(1, &ebo);
+
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo); 
+
+        glBufferData(GL_ARRAY_BUFFER, patchesVertices.size() * sizeof(Vertex), &patchesVertices[0], GL_STATIC_DRAW); 
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices2.size() * sizeof(unsigned int), &indices2[0], GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0); 
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color)); // Can remove l8tr
+
+        glDrawElements(GL_TRIANGLES, indices2.size(), GL_UNSIGNED_INT, 0); // GL_PATCH pour la primitive APRES AVOIR AJOUTER LES SHADERS
+
+        glBindVertexArray(0);
     }
 
     glm::mat4 getViewMatrix()
@@ -873,6 +925,7 @@ struct App : public OpenGLApplication
 
             // TODO: Calcul et mise à jour de la courbe
             calculateCurveVertices(bezierNPoints);
+            //calculatePatchesVertices(patchesNPoints); 
         }
 
         car_.update(deltaTime_);
@@ -954,12 +1007,15 @@ struct App : public OpenGLApplication
         glStencilMask(0xFF);
         glStencilFunc(GL_ALWAYS, 0, 0xFF);
         glDepthMask(GL_TRUE);
+
+        //drawPatch();
     }
 
 private:
     EdgeEffect edgeEffectShader_;
     CelShading celShadingShader_;
     Sky skyShader_;
+    //Grass grassShader_;
 
     Texture2D grassTexture_;
     Texture2D streetTexture_;
@@ -1019,6 +1075,9 @@ private:
     // TODO: Ajouter ces attributs
     unsigned int bezierNPoints = 3;
     unsigned int oldBezierNPoints = 0;
+    unsigned int patchesNPoints = 3;
+    unsigned int patchesLength = 4;
+    unsigned int patchesHeight = 13;
 
     int cameraMode = 0;
     float cameraAnimation = 0.f;
@@ -1028,6 +1087,9 @@ private:
     GLuint vao, vbo, ebo;
     std::vector<Vertex> curveVertices;
     std::vector<unsigned int> indices;
+
+    std::vector<Vertex> patchesVertices;
+    std::vector<unsigned int> indices2; // Sorry didnt know what else to call it
 };
 
 
