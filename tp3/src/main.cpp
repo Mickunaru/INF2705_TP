@@ -604,7 +604,7 @@ struct App : public OpenGLApplication
 
     void calculateCurveVertices(unsigned int nPoints)
     {
-		curveVertices.clear();
+        curveVertices.clear();
         indices.clear();
 
         unsigned int currentIndex = 0;
@@ -613,9 +613,9 @@ struct App : public OpenGLApplication
         {
             BezierCurve curve = curves[j];
             unsigned int start = (j == 0) ? 0 : 1;
-            for (unsigned int i = start; i <= nPoints; ++i)
+            for (unsigned int i = start; i <= nPoints + 1; ++i)
             {
-                float t = static_cast<float>(i) / static_cast<float>(nPoints);
+                float t = static_cast<float>(i) / static_cast<float>(nPoints + 1);
                 float u = 1.0f - t;
                 glm::vec3 position =
                     u * u * u * curve.p0 +
@@ -626,8 +626,6 @@ struct App : public OpenGLApplication
                 indices.push_back(currentIndex++);
             }
         }
-
-        indices.push_back(0);
     }
 
     void drawCurve(glm::mat4& projView, glm::mat4& view)
@@ -651,7 +649,7 @@ struct App : public OpenGLApplication
         celShadingShader_.setMatrices(mvp, view, model);
 
         glDrawElements(GL_LINE_STRIP, indices.size(), GL_UNSIGNED_INT, 0);
-	}
+    }
 
     glm::mat4 getViewMatrix()
     {
@@ -792,7 +790,7 @@ struct App : public OpenGLApplication
             lightsData_.spotLights[N_STREETLIGHTS + 3].diffuse = glm::vec4(0.0f);
             lightsData_.spotLights[N_STREETLIGHTS + 3].specular = glm::vec4(0.0f);
         }
-      
+
     }
 
     void setMaterial(Material& mat)
@@ -837,12 +835,12 @@ struct App : public OpenGLApplication
 
                 cameraAnimation += deltaTime_ / 3.0;
 
-				float progress = cameraAnimation / 5.0f;
-				unsigned int totalNPoints = bezierNPoints * 5;
+                float progress = cameraAnimation / 5.0f;
+                unsigned int totalNPoints = (bezierNPoints + 1) * 5;
                 float tGlobal = progress * (totalNPoints - 1);
                 unsigned int idx = static_cast<unsigned int>(tGlobal);
-                idx = std::min(idx, bezierNPoints * 5 - 2);
-				float t = tGlobal - idx;
+                idx = std::min(idx, totalNPoints - 2);
+                float t = tGlobal - idx;
 
                 glm::vec3 start = curveVertices[idx].position;
                 glm::vec3 end = curveVertices[idx + 1].position;
@@ -864,6 +862,9 @@ struct App : public OpenGLApplication
                 cameraMode = 0;
             }
         }
+        else {
+            updateCameraInput();
+        }
 
         bool hasNumberOfSidesChanged = bezierNPoints != oldBezierNPoints;
         if (hasNumberOfSidesChanged)
@@ -874,7 +875,6 @@ struct App : public OpenGLApplication
             calculateCurveVertices(bezierNPoints);
         }
 
-        updateCameraInput();
         car_.update(deltaTime_);
 
         updateCarLight();
