@@ -185,6 +185,8 @@ BezierCurve curves[5] =
     }
 };
 
+
+
 struct App : public OpenGLApplication
 {
     App()
@@ -241,7 +243,6 @@ struct App : public OpenGLApplication
         // TP1 polygone; au lieu de faire le point tu fait la forme pour faire un plan
         //calculateCurveVertices(bezierNPoints);
         //calculatePatchesVertices(patchesNPoints);
-
 
         edgeEffectShader_.create();
         celShadingShader_.create();
@@ -361,10 +362,13 @@ struct App : public OpenGLApplication
 
         lights_.allocate(&lightsData_, sizeof(lightsData_));
         lights_.setBindingIndex(1);
+        glGenVertexArrays(1, &vaoCurve);
+        glGenBuffers(1, &vboCurve);
+        glGenBuffers(1, &eboCurve);
 
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ebo);
+        glGenVertexArrays(1, &vaoPatch);
+        glGenBuffers(1, &vboPatch);
+        glGenBuffers(1, &eboPatch);
 
         CHECK_GL_ERROR;
     }
@@ -648,7 +652,7 @@ struct App : public OpenGLApplication
     void calculateCurveVertices(unsigned int nPoints)
     {
         curveVertices.clear();
-        indices.clear();
+        indicesCurve.clear();
 
         unsigned int currentIndex = 0;
 
@@ -666,14 +670,14 @@ struct App : public OpenGLApplication
                     3 * t * t * u * curve.c1 +
                     t * t * t * curve.p1;
                 curveVertices.push_back({ position, glm::vec4(1.0f) });
-                indices.push_back(currentIndex++);
+                indicesCurve.push_back(currentIndex++);
             }
         }
     }
 
     void calculatePatchesVertices(unsigned int nPoints) {
         patchesVertices.clear();
-        indices2.clear();
+        indicesPatch.clear();
 
         unsigned int currentIndex = 0;
 
@@ -689,56 +693,47 @@ struct App : public OpenGLApplication
                 //float u = 1.0f - t;
                 //glm::vec3 position = patch; 
                 //patchesVertices.push_back({ position, glm::vec4(1.0f) }); // Enlever color? 
-                //indices2.push_back(currentIndex++);
+                //indicesPatch.push_back(currentIndex++);
             }
         }
     }
 
     void drawCurve(glm::mat4& projView, glm::mat4& view)
     {
-        glBindVertexArray(vao);
+        glBindVertexArray(vaoCurve);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vboCurve);
         glBufferData(GL_ARRAY_BUFFER, curveVertices.size() * sizeof(Vertex), curveVertices.data(), GL_STATIC_DRAW);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboCurve);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesCurve.size() * sizeof(unsigned int), indicesCurve.data(), GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
 
         glm::mat4 model = glm::mat4(1.0f);
         glm::mat4 mvp = projView * model;
         celShadingShader_.setMatrices(mvp, view, model);
 
-        glDrawElements(GL_LINE_STRIP, indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_LINE_STRIP, indicesCurve.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
     }
 
     void drawPatch() {
 
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ebo);
-
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo); 
+        glBindVertexArray(vaoPatch);
+        glBindBuffer(GL_ARRAY_BUFFER, vboPatch); 
 
         glBufferData(GL_ARRAY_BUFFER, patchesVertices.size() * sizeof(Vertex), &patchesVertices[0], GL_STATIC_DRAW); 
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices2.size() * sizeof(unsigned int), &indices2[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboPatch);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesPatch.size() * sizeof(unsigned int), &indicesPatch[0], GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0); 
 
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color)); // Can remove l8tr
-
-        glDrawElements(GL_TRIANGLES, indices2.size(), GL_UNSIGNED_INT, 0); // GL_PATCH pour la primitive APRES AVOIR AJOUTER LES SHADERS
-
+        glDrawElements(GL_TRIANGLES, indicesPatch.size(), GL_UNSIGNED_INT, 0); // GL_PATCH pour la primitive APRES AVOIR AJOUTER LES SHADERS
         glBindVertexArray(0);
     }
 
@@ -1161,12 +1156,14 @@ private:
     bool isAnimatingCamera = false;
 
     // TODO: Ajouter les attributs de vbo, ebo, vao nécessaire
-    GLuint vao, vbo, ebo;
-    std::vector<Vertex> curveVertices;
-    std::vector<unsigned int> indices;
 
+    GLuint vaoCurve, vboCurve, eboCurve;
+    std::vector<Vertex> curveVertices;
+    std::vector<unsigned int> indicesCurve;
+
+    GLuint vaoPatch, vboPatch, eboPatch;
 	std::vector<Vertex> patchesVertices;
-	std::vector<unsigned int> indices2;
+	std::vector<unsigned int> indicesPatch;
 
     GLuint vaoParticles_;
 
