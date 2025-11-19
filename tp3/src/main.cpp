@@ -715,6 +715,8 @@ struct App : public OpenGLApplication
         celShadingShader_.setMatrices(mvp, view, model);
 
         glDrawElements(GL_LINE_STRIP, indices.size(), GL_UNSIGNED_INT, 0);
+
+		glBindVertexArray(0);
     }
 
     void drawPatch() {
