@@ -208,7 +208,7 @@ struct App : public OpenGLApplication
         //       Seulement le buffer en entrée à besoin d'être initialisé à 0.
         //       Réfléchisser au type d'usage.
         
-        // TODO: Créer un vao pour le dessin des particules et activer les attributs nécessaires.
+        // TODO: Créer un vaoCurve pour le dessin des particules et activer les attributs nécessaires.
 
 
         // TODO: Création des nouveaux shaders.
@@ -362,13 +362,14 @@ struct App : public OpenGLApplication
 
         lights_.allocate(&lightsData_, sizeof(lightsData_));
         lights_.setBindingIndex(1);
+
         glGenVertexArrays(1, &vaoCurve);
         glGenBuffers(1, &vboCurve);
         glGenBuffers(1, &eboCurve);
 
-        glGenVertexArrays(1, &vaoPatch);
-        glGenBuffers(1, &vboPatch);
-        glGenBuffers(1, &eboPatch);
+        glGenVertexArrays(1, &vaoCurvePatch);
+        glGenBuffers(1, &vboCurvePatch);
+        glGenBuffers(1, &eboCurvePatch);
 
         CHECK_GL_ERROR;
     }
@@ -722,18 +723,26 @@ struct App : public OpenGLApplication
 
     void drawPatch() {
 
-        glBindVertexArray(vaoPatch);
-        glBindBuffer(GL_ARRAY_BUFFER, vboPatch); 
+        glGenVertexArrays(1, &vaoCurve);
+        glGenBuffers(1, &vboCurve);
+        glGenBuffers(1, &eboCurve);
+
+        glBindVertexArray(vaoCurve);
+        glBindBuffer(GL_ARRAY_BUFFER, vboCurve); 
 
         glBufferData(GL_ARRAY_BUFFER, patchesVertices.size() * sizeof(Vertex), &patchesVertices[0], GL_STATIC_DRAW); 
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboPatch);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboCurve);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesPatch.size() * sizeof(unsigned int), &indicesPatch[0], GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0); 
 
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color)); // Can remove l8tr
+
         glDrawElements(GL_TRIANGLES, indicesPatch.size(), GL_UNSIGNED_INT, 0); // GL_PATCH pour la primitive APRES AVOIR AJOUTER LES SHADERS
+
         glBindVertexArray(0);
     }
 
@@ -1155,17 +1164,16 @@ private:
     float cameraAnimation = 0.f;
     bool isAnimatingCamera = false;
 
-    // TODO: Ajouter les attributs de vbo, ebo, vao nécessaire
-
+    // TODO: Ajouter les attributs de vboCurve, eboCurve, vaoCurve nécessaire
     GLuint vaoCurve, vboCurve, eboCurve;
     std::vector<Vertex> curveVertices;
     std::vector<unsigned int> indicesCurve;
 
-    GLuint vaoPatch, vboPatch, eboPatch;
+    GLuint vaoCurvePatch, vboCurvePatch, eboCurvePatch;
 	std::vector<Vertex> patchesVertices;
 	std::vector<unsigned int> indicesPatch;
 
-    GLuint vaoParticles_;
+    GLuint vaoCurveParticles_;
 
     float totalTime;
     float timerParticles_;
