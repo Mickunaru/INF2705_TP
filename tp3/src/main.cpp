@@ -23,6 +23,7 @@
 #include "shaders.hpp"
 #include "textures.hpp"
 #include "uniform_buffer.hpp"
+#include "shader_storage_buffer.hpp"
 
 #define CHECK_GL_ERROR printGLError(__FILE__, __LINE__)
 
@@ -71,6 +72,18 @@ struct BezierCurve
     glm::vec3 c0;
     glm::vec3 c1;
     glm::vec3 p1;
+};
+
+// Ne pas modifier
+struct Particle
+{
+    glm::vec3 position;
+    GLfloat zOrientation;
+    glm::vec4 velocity; // vec3, but padded
+    glm::vec4 color;
+    glm::vec2 size; 
+    GLfloat timeToLive;
+    GLfloat maxTimeToLive;
 };
 
 // Matériels
@@ -181,11 +194,28 @@ struct App : public OpenGLApplication
         , isMouseMotionEnabled_(false)
         , currentScene_(0)
         , isDay_(true)
+        , totalTime(0.0)
+        , timerParticles_(0.0)
+        , nParticles_(0)
     {
     }
 
     void init() override
     {
+        // TODO: Allocation des SSBO.
+        //       Allouer suffisament d'espace pour le nombre maximal de particules.
+        //       Seulement le buffer en entrée à besoin d'être initialisé à 0.
+        //       Réfléchisser au type d'usage.
+        
+        // TODO: Créer un vao pour le dessin des particules et activer les attributs nécessaires.
+
+
+        // TODO: Création des nouveaux shaders.
+        
+        
+        // TODO: Initialisation de la nouvelle texture pour les particules.
+        // "../textures/smoke.png"
+
         setKeybindMessage(
             "ESC : quitter l'application." "\n"
             "T : changer de scène." "\n"
@@ -213,6 +243,8 @@ struct App : public OpenGLApplication
         edgeEffectShader_.create();
         celShadingShader_.create();
         skyShader_.create();
+		grassShader_.create();
+        particleShadingShader_.create();
 
         car_.edgeEffectShader = &edgeEffectShader_;
         car_.celShadingShader = &celShadingShader_;
@@ -247,6 +279,11 @@ struct App : public OpenGLApplication
         streetlightLightTexture_.load("../textures/streetlight_light.png");
         streetlightLightTexture_.setWrap(GL_REPEAT);
         streetlightLightTexture_.setFiltering(GL_NEAREST);
+
+        smokeTexture_.load("../textures/smoke.png");
+        smokeTexture_.setWrap(GL_REPEAT);
+        smokeTexture_.setFiltering(GL_LINEAR);
+        smokeTexture_.enableMipmap();
 
         streetTexture_.use();
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
@@ -366,12 +403,15 @@ struct App : public OpenGLApplication
         ImGui::Begin("Scene Parameters");
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
 
+        // TODO: Au besoin, ajouter la recharge de vos nouveaux shaders
+        //       après if (ImGui::Button("Reload Shaders")).
         if (ImGui::Button("Reload Shaders"))
         {
             CHECK_GL_ERROR;
             edgeEffectShader_.reload();
             celShadingShader_.reload();
             skyShader_.reload();
+			grassShader_.reload();
 
             setLightingUniform();
             CHECK_GL_ERROR;
@@ -880,6 +920,20 @@ struct App : public OpenGLApplication
         updateCarLight();
         lights_.updateData(&lightsData_.spotLights[N_STREETLIGHTS], sizeof(DirectionalLight) + N_STREETLIGHTS * sizeof(SpotLight), 4 * sizeof(SpotLight));
 
+        // TODO: Attention à l'endroit où vous faites votre dessin, la texture des particules est transparente.
+        
+        // Particles    
+        totalTime += deltaTime_;
+        timerParticles_ += deltaTime_;        
+        const float particlesSpawnInterval = 0.2f;
+        
+        unsigned int particlesToAdd = timerParticles_ / particlesSpawnInterval;
+        timerParticles_ -= particlesToAdd * particlesSpawnInterval;
+        
+        nParticles_ += particlesToAdd;
+        if (nParticles_ > MAX_PARTICLES_)
+            nParticles_ = MAX_PARTICLES_;
+
         glm::mat4 view = getViewMatrix();
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
@@ -954,12 +1008,38 @@ struct App : public OpenGLApplication
         glStencilMask(0xFF);
         glStencilFunc(GL_ALWAYS, 0, 0xFF);
         glDepthMask(GL_TRUE);
+
+        // Particles update
+    
+        // TODO: Mise à jour des données à l'aide du compute shader
+        //       Envoyer vos uniforms.
+        
+        // Utiliser car_.carModel pour calculer la nouvelle position et direction d'émission de particule.
+        // glm::vec3 exhaustPos = vec3(2.0, 0.24, -0.43);
+        // glm::vec3 exhaustDir = vec3(1, 0, 0);
+        
+        // TODO: Configurer les buffers d'entrée et de sortie.
+        
+        // TODO: Envois de la commande de calcul.
+        //       Pas besoin d'optimiser le nombre de work group vs la taille local (dans le shader).
+        
+        
+        // Particles draw
+        
+        // TODO: Dessin des particules. Utiliser le nombre de particules actuellement utilisées.
+        //       Utiliser la texture et envoyer vos uniforms.
+        //       Il sera nécessaire de spécifier les entrée en spécifiant le buffer d'entrée.
+        //       Activer le blending et restaurer l'état du contexte modifié.
+        
+        // TODO: Interchanger les deux buffers, celui en entrée devient la sortie, et vice versa.
     }
 
 private:
     EdgeEffect edgeEffectShader_;
     CelShading celShadingShader_;
     Sky skyShader_;
+	Grass grassShader_;
+    ParticleShading particleShadingShader_;
 
     Texture2D grassTexture_;
     Texture2D streetTexture_;
@@ -968,6 +1048,7 @@ private:
     Texture2D treeTexture_;
     Texture2D streetlightTexture_;
     Texture2D streetlightLightTexture_;
+    Texture2D smokeTexture_;
     TextureCubeMap skyboxTexture_;
     TextureCubeMap skyboxNightTexture_;
 
@@ -1028,6 +1109,17 @@ private:
     GLuint vao, vbo, ebo;
     std::vector<Vertex> curveVertices;
     std::vector<unsigned int> indices;
+
+    GLuint vaoParticles_;
+
+    float totalTime;
+    float timerParticles_;
+
+    static const unsigned int MAX_PARTICLES_ = 64;
+    unsigned int nParticles_;    
+
+    // Ssbo
+    ShaderStorageBuffer particles_[2];
 };
 
 

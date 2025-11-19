@@ -65,6 +65,9 @@
     <ClCompile Include="uniform_buffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="shader_storage_buffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt">
@@ -109,6 +112,18 @@
     <None Include="shaders\grass.vs.glsl">
       <Filter>Shader Source Files</Filter>
     </None>
+    <None Include="shaders\particlesDraw.fs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\particlesDraw.gs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\particlesDraw.vs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\particlesUpdate.cs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\inf2705\OpenGLApplication.hpp">
@@ -142,6 +157,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="uniform_buffer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shader_storage_buffer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

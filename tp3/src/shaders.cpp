@@ -87,3 +87,45 @@ void CelShading::printAllProperties()
     printf("Number of Spot Lights Uniform Location: %u\n", nSpotLightsULoc);
     printf("Global Ambient Uniform Location: %u\n", globalAmbientULoc);
 }
+
+void Grass::load()
+{
+    const char* VERTEX_SRC_PATH = "./shaders/grass.vs.glsl";
+    const char* FRAGMENT_SRC_PATH = "./shaders/grass.fs.glsl";
+	const char* GEOMETRY_SRC_PATH = "./shaders/grass.gs.glsl";
+	const char* TESS_CONTROL_SRC_PATH = "./shaders/grass.tcs.glsl";
+	const char* TESS_EVALUATION_SRC_PATH = "./shaders/grass.tes.glsl";
+    
+    name_ = "Grass";
+    loadShaderSource(GL_VERTEX_SHADER, VERTEX_SRC_PATH);
+    loadShaderSource(GL_FRAGMENT_SHADER, FRAGMENT_SRC_PATH); 
+	loadShaderSource(GL_GEOMETRY_SHADER, GEOMETRY_SRC_PATH);
+	loadShaderSource(GL_TESS_CONTROL_SHADER, TESS_CONTROL_SRC_PATH);
+	loadShaderSource(GL_TESS_EVALUATION_SHADER, TESS_EVALUATION_SRC_PATH);
+    link();
+}
+
+void Grass::getAllUniformLocations()
+{
+    return;
+}
+
+void ParticleShading::load()
+{
+    const char* VERTEX_SRC_PATH = "./shaders/particlesDraw.vs.glsl";
+    const char* FRAGMENT_SRC_PATH = "./shaders/particlesDraw.fs.glsl";
+    const char* GEOMETRY_SRC_PATH = "./shaders/particlesDraw.gs.glsl";
+    const char* COMPUTE_SRC_PATH = "./shaders/particlesUpdate.cs.glsl";
+
+    name_ = "Particle";
+    loadShaderSource(GL_VERTEX_SHADER, VERTEX_SRC_PATH);
+    loadShaderSource(GL_FRAGMENT_SHADER, FRAGMENT_SRC_PATH);
+    loadShaderSource(GL_GEOMETRY_SHADER, GEOMETRY_SRC_PATH);
+    loadShaderSource(GL_COMPUTE_SHADER, COMPUTE_SRC_PATH);
+    link();
+}
+
+void ParticleShading::getAllUniformLocations()
+{
+    modelViewULoc = glGetUniformLocation(id_, "modelView");
+}
