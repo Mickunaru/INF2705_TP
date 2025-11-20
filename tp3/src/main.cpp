@@ -35,6 +35,12 @@ struct Vertex {
     glm::vec4 color; // We might need to remove this as its not used
 };
 
+struct Patch {
+    glm::vec3 position;
+    glm::vec4 color;
+    float height;
+};
+
 struct Material
 {
     glm::vec4 emission; // vec3, but padded
@@ -241,13 +247,14 @@ struct App : public OpenGLApplication
 
         // TODO: Initialisation des meshes (béziers, patches)
         // TP1 polygone; au lieu de faire le point tu fait la forme pour faire un plan
-        //calculateCurveVertices(bezierNPoints);
-        //calculatePatchesVertices(patchesNPoints);
+
 
         edgeEffectShader_.create();
         celShadingShader_.create();
         skyShader_.create();
 		grassShader_.create();
+        grassShader_.load();
+        grassShader_.getAllUniformLocations();
         particleShadingShader_.create();
 
         car_.edgeEffectShader = &edgeEffectShader_;
@@ -367,9 +374,9 @@ struct App : public OpenGLApplication
         glGenBuffers(1, &vboCurve);
         glGenBuffers(1, &eboCurve);
 
-        glGenVertexArrays(1, &vaoCurvePatch);
-        glGenBuffers(1, &vboCurvePatch);
-        glGenBuffers(1, &eboCurvePatch);
+        glGenVertexArrays(1, &vaoPatch);
+        glGenBuffers(1, &vboPatch);
+        glGenBuffers(1, &eboPatch);
 
         CHECK_GL_ERROR;
     }
@@ -684,18 +691,33 @@ struct App : public OpenGLApplication
 
         for (unsigned int j = 0; j < 5; ++j)
         {
-            //Vertex patch = patches[j]; // Puisquon a seulement besoin de pos? 
-            // Ajouter un boucle for pour les coords
-            // On peut commencer par ajouter un grand caree un bord et ensuite dans lautre bord
-            unsigned int start = (j == 0) ? 0 : 1;
-            for (unsigned int i = start; i <= nPoints + 1; ++i)
+            Patch patch = { curves[j].p0, glm::vec4(1.0f), 0.0f }; // On prend juste p0 comme position de départ pour le patch
+
+            for (unsigned int i = 0; i <= nPoints; ++i)
             {
-                //float t = static_cast<float>(i) / static_cast<float>(nPoints + 1);
-                //float u = 1.0f - t;
-                //glm::vec3 position = patch; 
-                //patchesVertices.push_back({ position, glm::vec4(1.0f) }); // Enlever color? 
-                //indicesPatch.push_back(currentIndex++);
+                float u = static_cast<float>(i) / static_cast<float>(nPoints);
+
+                for (unsigned int k = 0; k <= nPoints; ++k)
+                {
+                    float v = static_cast<float>(k) / static_cast<float>(nPoints);
+
+                    // Position du vertex dans la grille
+                    glm::vec3 position = patch.position + glm::vec3(u, patch.height, v);
+
+                    patchesVertices.push_back({ position, glm::vec4(1.0f) });
+                    indicesPatch.push_back(currentIndex++);
+                }
             }
+
+            //unsigned int start = (j == 0) ? 0 : 1;
+            //for (unsigned int i = start; i <= nPoints + 1; ++i)
+            //{
+            //    //float t = static_cast<float>(i) / static_cast<float>(nPoints + 1);
+            //    //float u = 1.0f - t;
+            //    //glm::vec3 position = patch; 
+            //    //patchesVertices.push_back({ position, glm::vec4(1.0f) }); // Enlever color? 
+            //    //indicesPatch.push_back(currentIndex++);
+            //}
         }
     }
 
@@ -712,7 +734,6 @@ struct App : public OpenGLApplication
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 
-
         glm::mat4 model = glm::mat4(1.0f);
         glm::mat4 mvp = projView * model;
         celShadingShader_.setMatrices(mvp, view, model);
@@ -721,28 +742,32 @@ struct App : public OpenGLApplication
         glBindVertexArray(0);
     }
 
-    void drawPatch() {
+    void drawPatch(glm::mat4& projView, glm::mat4& view) {
+        glBindVertexArray(vaoPatch);
 
-        glGenVertexArrays(1, &vaoCurve);
-        glGenBuffers(1, &vboCurve);
-        glGenBuffers(1, &eboCurve);
+        glBindBuffer(GL_ARRAY_BUFFER, vboPatch); 
+        glBufferData(GL_ARRAY_BUFFER, patchesVertices.size() * sizeof(Vertex), patchesVertices.data(), GL_STATIC_DRAW);
 
-        glBindVertexArray(vaoCurve);
-        glBindBuffer(GL_ARRAY_BUFFER, vboCurve); 
-
-        glBufferData(GL_ARRAY_BUFFER, patchesVertices.size() * sizeof(Vertex), &patchesVertices[0], GL_STATIC_DRAW); 
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboCurve);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesPatch.size() * sizeof(unsigned int), &indicesPatch[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboPatch);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesPatch.size() * sizeof(unsigned int), indicesPatch.data(), GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0); 
 
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color)); // Can remove l8tr
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 modelView =  view * model;
+        glm::mat4 mvp = projView * modelView;
 
-        glDrawElements(GL_TRIANGLES, indicesPatch.size(), GL_UNSIGNED_INT, 0); // GL_PATCH pour la primitive APRES AVOIR AJOUTER LES SHADERS
+        glUniformMatrix4fv(grassShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+        CHECK_GL_ERROR;
 
+        glUniformMatrix4fv(grassShader_.modelViewULoc, 1, GL_FALSE, glm::value_ptr(modelView));  
+        CHECK_GL_ERROR;
+
+        glPatchParameteri(GL_PATCH_VERTICES, 3);// Tesselation
+        glDrawElements(GL_PATCHES, static_cast<GLsizei>(indicesPatch.size()), GL_UNSIGNED_INT, 0); // GL_PATCH pour la primitive APRES AVOIR AJOUTER LES SHADERS
+
+        glDisableVertexAttribArray(0);
         glBindVertexArray(0);
     }
 
@@ -895,6 +920,7 @@ struct App : public OpenGLApplication
 
     void sceneMain()
     {
+        CHECK_GL_ERROR;
         ImGui::Begin("Scene Parameters");
         // TODO: À ajouter
         ImGui::SliderInt("Bezier Number Of Points", (int*)&bezierNPoints, 0, 16);
@@ -920,7 +946,6 @@ struct App : public OpenGLApplication
         ImGui::Checkbox("Right Blinker", &car_.isRightBlinkerActivated);
         ImGui::Checkbox("Brake", &car_.isBraking);
         ImGui::End();
-
         if (isAnimatingCamera)
         {
             if (cameraAnimation < 5)
@@ -977,7 +1002,7 @@ struct App : public OpenGLApplication
         lights_.updateData(&lightsData_.spotLights[N_STREETLIGHTS], sizeof(DirectionalLight) + N_STREETLIGHTS * sizeof(SpotLight), 4 * sizeof(SpotLight));
 
         // TODO: Attention à l'endroit où vous faites votre dessin, la texture des particules est transparente.
-        
+        CHECK_GL_ERROR;
         // Particles    
         totalTime += deltaTime_;
         timerParticles_ += deltaTime_;        
@@ -1012,12 +1037,17 @@ struct App : public OpenGLApplication
 
         // TODO: Dessin du gazon
         // glDraw...
+        grassShader_.use();
+
+        //setMaterial(grassMat);
+        
+        //drawPatch(projView, view);
+        CHECK_GL_ERROR;
 
         celShadingShader_.use();
 
         // TODO: Dessin de la courbe
         // glDraw...
-
         setMaterial(bezierMat);
         drawCurve(projView, view);
 
@@ -1025,9 +1055,11 @@ struct App : public OpenGLApplication
         setMaterial(streetMat);
         drawStreet(projView, view);
 
+        CHECK_GL_ERROR;
         grassTexture_.use();
         setMaterial(grassMat);
         drawGrass(projView, view);
+        CHECK_GL_ERROR;
 
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_STENCIL_TEST);
@@ -1169,7 +1201,7 @@ private:
     std::vector<Vertex> curveVertices;
     std::vector<unsigned int> indicesCurve;
 
-    GLuint vaoCurvePatch, vboCurvePatch, eboCurvePatch;
+    GLuint vaoPatch, vboPatch, eboPatch;
 	std::vector<Vertex> patchesVertices;
 	std::vector<unsigned int> indicesPatch;
 

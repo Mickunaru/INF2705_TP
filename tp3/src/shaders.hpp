@@ -33,7 +33,6 @@ public:
     GLuint normalULoc;
     
     GLuint nSpotLightsULoc;
-    
     GLuint globalAmbientULoc;
 
 public:
@@ -49,9 +48,12 @@ protected:
 
 class Grass : public ShaderProgram
 {
-protected:
+public:
+    GLuint modelViewULoc;
+    GLuint mvpULoc;
     virtual void load() override;
     virtual void getAllUniformLocations() override;
+    
 };
 
 

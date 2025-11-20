@@ -90,6 +90,7 @@ void CelShading::printAllProperties()
 
 void Grass::load()
 {
+    // Logique des patches de triangles OU INIT
     const char* VERTEX_SRC_PATH = "./shaders/grass.vs.glsl";
     const char* FRAGMENT_SRC_PATH = "./shaders/grass.fs.glsl";
 	const char* GEOMETRY_SRC_PATH = "./shaders/grass.gs.glsl";
@@ -107,7 +108,8 @@ void Grass::load()
 
 void Grass::getAllUniformLocations()
 {
-    return;
+    mvpULoc = glGetUniformLocation(id_, "mvp");
+    modelViewULoc = glGetUniformLocation(id_, "modelView");
 }
 
 void ParticleShading::load()
