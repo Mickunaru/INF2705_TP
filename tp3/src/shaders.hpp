@@ -55,10 +55,30 @@ protected:
 };
 
 
-class ParticleShading : public ShaderProgram
+class ParticlesDraw : public ShaderProgram
 {
 public:
     GLuint modelViewULoc;
+    GLuint projectionULoc;
+	GLuint viewULoc;
+
+    void setMatrices(glm::mat4& modelView, glm::mat4& projection, glm::mat4& view);
+
+protected:
+    virtual void load() override;
+    virtual void getAllUniformLocations() override;
+};
+
+
+class ParticlesUpdate : public ShaderProgram
+{
+public:
+    GLuint deltaTimeLoc;
+    GLuint timeLoc;
+    GLuint emitterPosLoc;
+    GLuint emitterDirLoc;
+
+    void setUniforms(float deltaTime, float totalTime, glm::vec3& emitterPos, glm::vec3& emitterDir);
 
 protected:
     virtual void load() override;

@@ -110,22 +110,54 @@ void Grass::getAllUniformLocations()
     return;
 }
 
-void ParticleShading::load()
+void ParticlesDraw::load()
 {
     const char* VERTEX_SRC_PATH = "./shaders/particlesDraw.vs.glsl";
-    const char* FRAGMENT_SRC_PATH = "./shaders/particlesDraw.fs.glsl";
     const char* GEOMETRY_SRC_PATH = "./shaders/particlesDraw.gs.glsl";
+    const char* FRAGMENT_SRC_PATH = "./shaders/particlesDraw.fs.glsl";
+
+    name_ = "ParticlesDraw";
+    loadShaderSource(GL_VERTEX_SHADER, VERTEX_SRC_PATH);
+    loadShaderSource(GL_GEOMETRY_SHADER, GEOMETRY_SRC_PATH);
+    loadShaderSource(GL_FRAGMENT_SHADER, FRAGMENT_SRC_PATH);
+    link();
+}
+
+void ParticlesDraw::getAllUniformLocations()
+{
+    modelViewULoc = glGetUniformLocation(id_, "modelView");
+    projectionULoc = glGetUniformLocation(id_, "projection");
+	viewULoc = glGetUniformLocation(id_, "view");
+}
+
+void ParticlesDraw::setMatrices(glm::mat4& modelView, glm::mat4& projection, glm::mat4& view)
+{
+    glUniformMatrix4fv(modelViewULoc, 1, GL_FALSE, glm::value_ptr(modelView));
+    glUniformMatrix4fv(projectionULoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(viewULoc, 1, GL_FALSE, glm::value_ptr(view));
+}
+
+void ParticlesUpdate::load()
+{
     const char* COMPUTE_SRC_PATH = "./shaders/particlesUpdate.cs.glsl";
 
-    name_ = "Particle";
-    loadShaderSource(GL_VERTEX_SHADER, VERTEX_SRC_PATH);
-    loadShaderSource(GL_FRAGMENT_SHADER, FRAGMENT_SRC_PATH);
-    loadShaderSource(GL_GEOMETRY_SHADER, GEOMETRY_SRC_PATH);
+    name_ = "ParticlesUpdate";
     loadShaderSource(GL_COMPUTE_SHADER, COMPUTE_SRC_PATH);
     link();
 }
 
-void ParticleShading::getAllUniformLocations()
+void ParticlesUpdate::getAllUniformLocations()
 {
-    modelViewULoc = glGetUniformLocation(id_, "modelView");
+    deltaTimeLoc = glGetUniformLocation(id_, "deltaTime");
+    timeLoc = glGetUniformLocation(id_, "time");
+    emitterPosLoc = glGetUniformLocation(id_, "emitterPosition");
+    emitterDirLoc = glGetUniformLocation(id_, "emitterDirection");
+}
+
+void ParticlesUpdate::setUniforms(float deltaTime, float totalTime, glm::vec3& emitterPos, glm::vec3& emitterDir)
+{
+    glUniform1f(deltaTimeLoc, deltaTime);
+    glUniform1f(timeLoc, totalTime);
+    glUniform3fv(emitterPosLoc, 1, glm::value_ptr(emitterPos));
+    glUniform3fv(emitterDirLoc, 1, glm::value_ptr(emitterDir));
 }
