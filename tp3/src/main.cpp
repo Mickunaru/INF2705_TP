@@ -719,23 +719,24 @@ struct App : public OpenGLApplication
         const float patchSize = 10.0f;
         const float startX = -MAP_SIZE / 2.0f;
         const float endX = MAP_SIZE / 2.0f;
-        const float streetHalfWidth = STREET_WIDTH / 2.0f + 0.5f;
+        const float streetHalfWidth = STREET_WIDTH / 2.0f;
 
-        // Side 1: Negative Z (trees are here based on initStaticModelMatrices)
-        float startZ1 = -25.0f;
+        // Side 1: Negative Z (trees based on initStaticModelMatrices)
+        float startZ1 = -26.0f;
         float endZ1 = -streetHalfWidth;
 
         // Side 2: Positive Z (streetlights are here)
         float startZ2 = streetHalfWidth;
-        float endZ2 = 25.0f;
+        float endZ2 = 26.0f;
 
         auto createPatches = [&](float startZ, float endZ) {
             for (float x = startX; x < endX; x += patchSize)
             {
                 for (float z = startZ; z < endZ; z += patchSize)
                 {
-                    // Clamp z to not exceed boundaries
+                    // Clamp z and x to not exceed boundaries
                     float actualEndZ = std::min(z + patchSize, endZ);
+                    float actualEndX = std::min(x + patchSize, endX);
 
                     unsigned int baseIndex = patchesVertices.size();
 
@@ -746,7 +747,7 @@ struct App : public OpenGLApplication
                         {
                             float v = static_cast<float>(k) / static_cast<float>(nPoints);
                             glm::vec3 position = glm::vec3(
-                                x + u * patchSize,
+                                x + u * (actualEndX - x),
                                 groundY,
                                 z + v * (actualEndZ - z)
                             );
