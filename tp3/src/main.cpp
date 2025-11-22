@@ -248,12 +248,12 @@ struct App : public OpenGLApplication
         // TODO: Initialisation des meshes (béziers, patches)
         // TP1 polygone; au lieu de faire le point tu fait la forme pour faire un plan
 
-
         edgeEffectShader_.create();
         celShadingShader_.create();
         skyShader_.create();
 		grassShader_.create();
         grassShader_.load();
+        grassShader_.use();
         grassShader_.getAllUniformLocations();
         particleShadingShader_.create();
 
@@ -377,6 +377,7 @@ struct App : public OpenGLApplication
         glGenVertexArrays(1, &vaoPatch);
         glGenBuffers(1, &vboPatch);
         glGenBuffers(1, &eboPatch);
+        calculatePatchesVertices(patchesNPoints);
 
         CHECK_GL_ERROR;
     }
@@ -687,38 +688,70 @@ struct App : public OpenGLApplication
         patchesVertices.clear();
         indicesPatch.clear();
 
-        unsigned int currentIndex = 0;
+        const float groundY = -0.1f;
+        const float patchSize = 10.0f;
+        const float startX = -MAP_SIZE / 2.0f;
+        const float endX = MAP_SIZE / 2.0f;
+        const float streetHalfWidth = STREET_WIDTH / 2.0f + 0.5f;
 
-        for (unsigned int j = 0; j < 5; ++j)
-        {
-            Patch patch = { curves[j].p0, glm::vec4(1.0f), 0.0f }; // On prend juste p0 comme position de départ pour le patch
+        // Side 1: Negative Z (trees are here based on initStaticModelMatrices)
+        float startZ1 = -25.0f;
+        float endZ1 = -streetHalfWidth;
 
-            for (unsigned int i = 0; i <= nPoints; ++i)
+        // Side 2: Positive Z (streetlights are here)
+        float startZ2 = streetHalfWidth;
+        float endZ2 = 25.0f;
+
+        auto createPatches = [&](float startZ, float endZ) {
+            for (float x = startX; x < endX; x += patchSize)
             {
-                float u = static_cast<float>(i) / static_cast<float>(nPoints);
-
-                for (unsigned int k = 0; k <= nPoints; ++k)
+                for (float z = startZ; z < endZ; z += patchSize)
                 {
-                    float v = static_cast<float>(k) / static_cast<float>(nPoints);
+                    // Clamp z to not exceed boundaries
+                    float actualEndZ = std::min(z + patchSize, endZ);
 
-                    // Position du vertex dans la grille
-                    glm::vec3 position = patch.position + glm::vec3(u, patch.height, v);
+                    unsigned int baseIndex = patchesVertices.size();
 
-                    patchesVertices.push_back({ position, glm::vec4(1.0f) });
-                    indicesPatch.push_back(currentIndex++);
+                    for (unsigned int i = 0; i <= nPoints; ++i)
+                    {
+                        float u = static_cast<float>(i) / static_cast<float>(nPoints);
+                        for (unsigned int k = 0; k <= nPoints; ++k)
+                        {
+                            float v = static_cast<float>(k) / static_cast<float>(nPoints);
+                            glm::vec3 position = glm::vec3(
+                                x + u * patchSize,
+                                groundY,
+                                z + v * (actualEndZ - z)
+                            );
+                            patchesVertices.push_back({ position, glm::vec4(1.0f) });
+                        }
+                    }
+
+                    unsigned int gridWidth = nPoints + 1;
+                    for (unsigned int i = 0; i < nPoints; ++i)
+                    {
+                        for (unsigned int k = 0; k < nPoints; ++k)
+                        {
+                            unsigned int topLeft = baseIndex + i * gridWidth + k;
+                            unsigned int topRight = topLeft + 1;
+                            unsigned int bottomLeft = topLeft + gridWidth;
+                            unsigned int bottomRight = bottomLeft + 1;
+
+                            indicesPatch.push_back(topLeft);
+                            indicesPatch.push_back(bottomLeft);
+                            indicesPatch.push_back(topRight);
+
+                            indicesPatch.push_back(topRight);
+                            indicesPatch.push_back(bottomLeft);
+                            indicesPatch.push_back(bottomRight);
+                        }
+                    }
                 }
             }
+            };
 
-            //unsigned int start = (j == 0) ? 0 : 1;
-            //for (unsigned int i = start; i <= nPoints + 1; ++i)
-            //{
-            //    //float t = static_cast<float>(i) / static_cast<float>(nPoints + 1);
-            //    //float u = 1.0f - t;
-            //    //glm::vec3 position = patch; 
-            //    //patchesVertices.push_back({ position, glm::vec4(1.0f) }); // Enlever color? 
-            //    //indicesPatch.push_back(currentIndex++);
-            //}
-        }
+        createPatches(startZ1, endZ1);
+        createPatches(startZ2, endZ2);
     }
 
     void drawCurve(glm::mat4& projView, glm::mat4& view)
@@ -743,6 +776,11 @@ struct App : public OpenGLApplication
     }
 
     void drawPatch(glm::mat4& projView, glm::mat4& view) {
+
+        if (patchesVertices.empty() || indicesPatch.empty()) {
+            return;
+        }
+
         glBindVertexArray(vaoPatch);
 
         glBindBuffer(GL_ARRAY_BUFFER, vboPatch); 
@@ -755,17 +793,23 @@ struct App : public OpenGLApplication
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0); 
 
         glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 modelView =  view * model;
-        glm::mat4 mvp = projView * modelView;
+        glm::mat4 mvp = projView * model;
+        glm::mat4 modelView = view * model;
+
+        //std::cout << "mvp loc = " << grassShader_.mvpULoc << std::endl;
+        //std::cout << "modelView loc = " << grassShader_.modelViewULoc << std::endl;
 
         glUniformMatrix4fv(grassShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
         CHECK_GL_ERROR;
 
-        glUniformMatrix4fv(grassShader_.modelViewULoc, 1, GL_FALSE, glm::value_ptr(modelView));  
-        CHECK_GL_ERROR;
+        glUniformMatrix4fv(grassShader_.modelViewULoc, 1, GL_FALSE, glm::value_ptr(modelView));
+
+        glDisable(GL_CULL_FACE);
 
         glPatchParameteri(GL_PATCH_VERTICES, 3);// Tesselation
-        glDrawElements(GL_PATCHES, static_cast<GLsizei>(indicesPatch.size()), GL_UNSIGNED_INT, 0); // GL_PATCH pour la primitive APRES AVOIR AJOUTER LES SHADERS
+        glDrawElements(GL_PATCHES, static_cast<GLsizei>(indicesPatch.size()), GL_UNSIGNED_INT, 0); 
+
+        glEnable(GL_CULL_FACE);
 
         glDisableVertexAttribArray(0);
         glBindVertexArray(0);
@@ -1041,8 +1085,8 @@ struct App : public OpenGLApplication
 
         //setMaterial(grassMat);
         
-        //drawPatch(projView, view);
-        CHECK_GL_ERROR;
+        drawPatch(projView, view);
+        //CHECK_GL_ERROR;
 
         celShadingShader_.use();
 

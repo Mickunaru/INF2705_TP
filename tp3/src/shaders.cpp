@@ -1,6 +1,9 @@
 #include "shaders.hpp"
 
+#include <iostream>
+
 #include <glm/gtc/type_ptr.hpp>
+using namespace std;
 
 
 void EdgeEffect::load()
@@ -110,6 +113,9 @@ void Grass::getAllUniformLocations()
 {
     mvpULoc = glGetUniformLocation(id_, "mvp");
     modelViewULoc = glGetUniformLocation(id_, "modelView");
+    if (mvpULoc == -1) {
+        std::cerr << "Warning: 'mvp' uniform not found in grass shader" << std::endl;
+    }
 }
 
 void ParticleShading::load()
