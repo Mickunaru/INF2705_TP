@@ -214,11 +214,9 @@ struct App : public OpenGLApplication
         //       Seulement le buffer en entrée à besoin d'être initialisé à 0.
         //       Réfléchisser au type d'usage.
         
-        // TODO: Créer un vaoCurve pour le dessin des particules et activer les attributs nécessaires.
-
+        // TODO: Créer un vao pour le dessin des particules et activer les attributs nécessaires.
 
         // TODO: Création des nouveaux shaders.
-        
         
         // TODO: Initialisation de la nouvelle texture pour les particules.
         // "../textures/smoke.png"
@@ -252,10 +250,13 @@ struct App : public OpenGLApplication
         celShadingShader_.create();
         skyShader_.create();
 		grassShader_.create();
+
         grassShader_.load();
         grassShader_.use();
         grassShader_.getAllUniformLocations();
-        particleShadingShader_.create();
+
+        particlesDrawShader_.create();
+		particlesUpdateShader_.create();
 
         car_.edgeEffectShader = &edgeEffectShader_;
         car_.celShadingShader = &celShadingShader_;
@@ -370,6 +371,13 @@ struct App : public OpenGLApplication
         lights_.allocate(&lightsData_, sizeof(lightsData_));
         lights_.setBindingIndex(1);
 
+        std::vector<Particle> zeroData(MAX_PARTICLES_, Particle());
+        particles_[0].allocate(zeroData.data(), MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_DRAW);
+        particles_[1].allocate(nullptr, MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_DRAW);
+
+        particles_[0].setBindingIndex(0);
+        particles_[1].setBindingIndex(1);
+
         glGenVertexArrays(1, &vaoCurve);
         glGenBuffers(1, &vboCurve);
         glGenBuffers(1, &eboCurve);
@@ -378,6 +386,23 @@ struct App : public OpenGLApplication
         glGenBuffers(1, &vboPatch);
         glGenBuffers(1, &eboPatch);
         calculatePatchesVertices(patchesNPoints);
+
+        glGenVertexArrays(1, &vaoParticles_);
+        glBindVertexArray(vaoParticles_);
+
+        particles_[0].bindAsArray();
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, position));
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, zOrientation));
+
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, color));
+
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, size));
 
         CHECK_GL_ERROR;
     }
@@ -428,6 +453,8 @@ struct App : public OpenGLApplication
             celShadingShader_.reload();
             skyShader_.reload();
 			grassShader_.reload();
+			particlesDrawShader_.reload();
+			particlesUpdateShader_.reload();
 
             setLightingUniform();
             CHECK_GL_ERROR;
@@ -815,6 +842,28 @@ struct App : public OpenGLApplication
         glBindVertexArray(0);
     }
 
+    void drawParticles(glm::mat4& projView, glm::mat4& view)
+    {
+        particlesDrawShader_.use();
+        smokeTexture_.use();
+
+        glm::mat4 particleModelView = view * car_.carModel;
+        particlesDrawShader_.setMatrices(particleModelView, projView, view);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDepthMask(GL_FALSE);
+
+        glBindVertexArray(vaoParticles_);
+        particles_[0].bindAsArray();
+        glDrawArrays(GL_POINTS, 0, nParticles_);
+
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
+
+        std::swap(particles_[0], particles_[1]);
+	}
+
     glm::mat4 getViewMatrix()
     {
         glm::mat4 view = glm::mat4(1.0);
@@ -1037,13 +1086,16 @@ struct App : public OpenGLApplication
 
             // TODO: Calcul et mise à jour de la courbe
             calculateCurveVertices(bezierNPoints);
-            //calculatePatchesVertices(patchesNPoints); 
         }
 
         car_.update(deltaTime_);
 
         updateCarLight();
         lights_.updateData(&lightsData_.spotLights[N_STREETLIGHTS], sizeof(DirectionalLight) + N_STREETLIGHTS * sizeof(SpotLight), 4 * sizeof(SpotLight));
+
+        glm::mat4 view = getViewMatrix();
+        glm::mat4 proj = getPerspectiveProjectionMatrix();
+        glm::mat4 projView = proj * view;
 
         // TODO: Attention à l'endroit où vous faites votre dessin, la texture des particules est transparente.
         CHECK_GL_ERROR;
@@ -1059,9 +1111,46 @@ struct App : public OpenGLApplication
         if (nParticles_ > MAX_PARTICLES_)
             nParticles_ = MAX_PARTICLES_;
 
-        glm::mat4 view = getViewMatrix();
-        glm::mat4 proj = getPerspectiveProjectionMatrix();
-        glm::mat4 projView = proj * view;
+        // Particles update
+
+        // TODO: Mise à jour des données à l'aide du compute shader
+        //       Envoyer vos uniforms.
+
+        // Utiliser car_.carModel pour calculer la nouvelle position et direction d'émission de particule.
+        // glm::vec3 exhaustPos = vec3(2.0, 0.24, -0.43);
+        // glm::vec3 exhaustDir = vec3(1, 0, 0);
+
+        // TODO: Configurer les buffers d'entrée et de sortie.
+
+        // TODO: Envois de la commande de calcul.
+        //       Pas besoin d'optimiser le nombre de work group vs la taille local (dans le shader).
+
+
+        // Particles draw
+
+        // TODO: Dessin des particules. Utiliser le nombre de particules actuellement utilisées.
+        //       Utiliser la texture et envoyer vos uniforms.
+        //       Il sera nécessaire de spécifier les entrée en spécifiant le buffer d'entrée.
+        //       Activer le blending et restaurer l'état du contexte modifié.
+
+        // TODO: Interchanger les deux buffers, celui en entrée devient la sortie, et vice versa.
+
+        glm::vec3 exhaustPos = vec3(2.0, 0.24, -0.43);
+        glm::vec3 exhaustDir = vec3(1, 0, 0);
+
+        glm::vec3 emitterPos = glm::vec3(car_.carModel * glm::vec4(exhaustPos, 1.0f));
+        glm::vec3 emitterDir = glm::normalize(car_.carModel * glm::vec4(exhaustDir, 1.0f));
+
+        particlesUpdateShader_.use();
+
+        particlesUpdateShader_.setUniforms(deltaTime_, totalTime, emitterPos, emitterDir);
+
+        particles_[0].setBindingIndex(0);
+        particles_[1].setBindingIndex(1);
+
+        glDispatchCompute(2, 1, 1);
+
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         skyShader_.use();
         if (isDay_)
@@ -1141,29 +1230,7 @@ struct App : public OpenGLApplication
         glStencilFunc(GL_ALWAYS, 0, 0xFF);
         glDepthMask(GL_TRUE);
 
-        // Particles update
-    
-        // TODO: Mise à jour des données à l'aide du compute shader
-        //       Envoyer vos uniforms.
-        
-        // Utiliser car_.carModel pour calculer la nouvelle position et direction d'émission de particule.
-        // glm::vec3 exhaustPos = vec3(2.0, 0.24, -0.43);
-        // glm::vec3 exhaustDir = vec3(1, 0, 0);
-        
-        // TODO: Configurer les buffers d'entrée et de sortie.
-        
-        // TODO: Envois de la commande de calcul.
-        //       Pas besoin d'optimiser le nombre de work group vs la taille local (dans le shader).
-        
-        
-        // Particles draw
-        
-        // TODO: Dessin des particules. Utiliser le nombre de particules actuellement utilisées.
-        //       Utiliser la texture et envoyer vos uniforms.
-        //       Il sera nécessaire de spécifier les entrée en spécifiant le buffer d'entrée.
-        //       Activer le blending et restaurer l'état du contexte modifié.
-        
-        // TODO: Interchanger les deux buffers, celui en entrée devient la sortie, et vice versa.
+        drawParticles(projView, view);
     }
 
 private:
@@ -1171,7 +1238,8 @@ private:
     CelShading celShadingShader_;
     Sky skyShader_;
 	Grass grassShader_;
-    ParticleShading particleShadingShader_;
+    ParticlesDraw particlesDrawShader_;
+	ParticlesUpdate particlesUpdateShader_;
 
     Texture2D grassTexture_;
     Texture2D streetTexture_;
@@ -1249,7 +1317,7 @@ private:
 	std::vector<Vertex> patchesVertices;
 	std::vector<unsigned int> indicesPatch;
 
-    GLuint vaoCurveParticles_;
+    GLuint vaoParticles_;
 
     float totalTime;
     float timerParticles_;
