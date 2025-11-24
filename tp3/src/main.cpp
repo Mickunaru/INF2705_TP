@@ -250,11 +250,6 @@ struct App : public OpenGLApplication
         celShadingShader_.create();
         skyShader_.create();
 		grassShader_.create();
-
-        grassShader_.load();
-        grassShader_.use();
-        grassShader_.getAllUniformLocations();
-
         particlesDrawShader_.create();
 		particlesUpdateShader_.create();
 
@@ -576,7 +571,7 @@ struct App : public OpenGLApplication
         const float STREET_OFFSET = STREET_WIDTH / 2;
         std::uniform_real_distribution<float> distMargin(10.0f, 20.0f);
 
-        float x = -MAP_SIZE / 2;
+        float x = -MAP_LENGTH / 2;
         for (unsigned int i = 0; i < N_STREETLIGHTS; ++i)
         {
             x += distMargin(rng);
@@ -595,7 +590,7 @@ struct App : public OpenGLApplication
         std::uniform_real_distribution<float> distAngle(0.0f, 2.0f * M_PI);
         std::uniform_real_distribution<float> distScale(0.6f, 1.2f);
 
-        x = -MAP_SIZE / 2;
+        x = -MAP_LENGTH / 2;
         for (unsigned int i = 0; i < N_TREES; ++i)
         {
             x += distMarginTrees(rng);
@@ -670,7 +665,7 @@ struct App : public OpenGLApplication
 
     void drawStreet(glm::mat4& projView, glm::mat4& view)
     {
-        glm::mat4 streetModel = glm::scale(glm::mat4(1), glm::vec3(MAP_SIZE, 1.0f, STREET_WIDTH));
+        glm::mat4 streetModel = glm::scale(glm::mat4(1), glm::vec3(MAP_LENGTH, 1.0f, STREET_WIDTH));
         glm::mat4 streetMVP = projView * streetModel;
         celShadingShader_.setMatrices(streetMVP, view, streetModel);
         street_.draw();
@@ -679,7 +674,7 @@ struct App : public OpenGLApplication
     void drawGrass(glm::mat4& projView, glm::mat4& view)
     {
         glm::mat4 grassModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
-        grassModel = glm::scale(grassModel, glm::vec3(MAP_SIZE, 1.0f, 50.0f));
+        grassModel = glm::scale(grassModel, glm::vec3(MAP_LENGTH, 1.0f, 50.0f));
         glm::mat4 grassMVP = projView * grassModel;
         celShadingShader_.setMatrices(grassMVP, view, grassModel);
         grass_.draw();
@@ -716,46 +711,35 @@ struct App : public OpenGLApplication
         indicesPatch.clear();
 
         const float groundY = -0.1f;
-        const float patchSize = 10.0f;
-        const float startX = -MAP_SIZE / 2.0f;
-        const float endX = MAP_SIZE / 2.0f;
+        const float patchSize = 5.0f;
+        const float startX = -MAP_LENGTH / 2.0f;
+        const float endX = MAP_LENGTH / 2.0f;
         const float streetHalfWidth = STREET_WIDTH / 2.0f;
 
-        // Side 1: Negative Z (trees based on initStaticModelMatrices)
-        float startZ1 = -26.0f;
-        float endZ1 = -streetHalfWidth;
-
-        // Side 2: Positive Z (streetlights are here)
-        float startZ2 = streetHalfWidth;
-        float endZ2 = 26.0f;
-
         auto createPatches = [&](float startZ, float endZ) {
-            for (float x = startX; x < endX; x += patchSize)
-            {
-                for (float z = startZ; z < endZ; z += patchSize)
-                {
-                    // Clamp z and x to not exceed boundaries
-                    float actualEndZ = std::min(z + patchSize, endZ);
-                    float actualEndX = std::min(x + patchSize, endX);
+            unsigned int gridWidth = nPoints + 1;
+
+            for (float x = startX; x < endX; x += patchSize) {
+                for (float z = startZ; z < endZ; z += patchSize) {
+
+                    float patchEndX = std::min(x + patchSize, endX);
+                    float patchEndZ = std::min(z + patchSize, endZ);
 
                     unsigned int baseIndex = patchesVertices.size();
 
-                    for (unsigned int i = 0; i <= nPoints; ++i)
-                    {
-                        float u = static_cast<float>(i) / static_cast<float>(nPoints);
-                        for (unsigned int k = 0; k <= nPoints; ++k)
-                        {
-                            float v = static_cast<float>(k) / static_cast<float>(nPoints);
-                            glm::vec3 position = glm::vec3(
-                                x + u * (actualEndX - x),
+                    for (unsigned int i = 0; i <= nPoints; ++i) {
+                        float u = static_cast<float>(i) / nPoints;
+                        for (unsigned int k = 0; k <= nPoints; ++k) {
+                            float v = static_cast<float>(k) / nPoints;
+                            glm::vec3 pos(
+                                x + u * (patchEndX - x),
                                 groundY,
-                                z + v * (actualEndZ - z)
+                                z + v * (patchEndZ - z)
                             );
-                            patchesVertices.push_back({ position, glm::vec4(1.0f) });
+                            patchesVertices.push_back({ pos, glm::vec4(1.0f) });
                         }
                     }
 
-                    unsigned int gridWidth = nPoints + 1;
                     for (unsigned int i = 0; i < nPoints; ++i)
                     {
                         for (unsigned int k = 0; k < nPoints; ++k)
@@ -776,7 +760,15 @@ struct App : public OpenGLApplication
                     }
                 }
             }
-            };
+        };
+
+        // Side 1: Negative Z (trees based on initStaticModelMatrices)
+        float startZ1 = -MAP_WIDTH / 2.0f;
+        float endZ1 = -streetHalfWidth;
+
+        // Side 2: Positive Z (streetlights are here)
+        float startZ2 = streetHalfWidth;
+        float endZ2 = MAP_WIDTH / 2.0f;
 
         createPatches(startZ1, endZ1);
         createPatches(startZ2, endZ2);
@@ -803,12 +795,8 @@ struct App : public OpenGLApplication
         glBindVertexArray(0);
     }
 
-    void drawPatch(glm::mat4& projView, glm::mat4& view) {
-
-        if (patchesVertices.empty() || indicesPatch.empty()) {
-            return;
-        }
-
+    void drawPatch(glm::mat4& projView, glm::mat4& view)
+    {
         glBindVertexArray(vaoPatch);
 
         glBindBuffer(GL_ARRAY_BUFFER, vboPatch); 
@@ -821,21 +809,15 @@ struct App : public OpenGLApplication
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0); 
 
         glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 mvp = projView * model;
         glm::mat4 modelView = view * model;
+        glm::mat4 mvp = projView * model;
 
-        //std::cout << "mvp loc = " << grassShader_.mvpULoc << std::endl;
-        //std::cout << "modelView loc = " << grassShader_.modelViewULoc << std::endl;
-
-        glUniformMatrix4fv(grassShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
-        CHECK_GL_ERROR;
-
-        glUniformMatrix4fv(grassShader_.modelViewULoc, 1, GL_FALSE, glm::value_ptr(modelView));
+		grassShader_.setMatrices(modelView, mvp);
 
         glDisable(GL_CULL_FACE);
 
-        glPatchParameteri(GL_PATCH_VERTICES, 3);// Tesselation
-        glDrawElements(GL_PATCHES, static_cast<GLsizei>(indicesPatch.size()), GL_UNSIGNED_INT, 0); 
+        glPatchParameteri(GL_PATCH_VERTICES, 3);
+        glDrawElements(GL_PATCHES, indicesPatch.size(), GL_UNSIGNED_INT, 0); 
 
         glEnable(GL_CULL_FACE);
 
@@ -1295,7 +1277,8 @@ private:
     bool areTreesInitialized_ = false;
     bool areStreetlightsInitialized_ = false;
 
-    const float MAP_SIZE = 100.0f;
+    const float MAP_LENGTH = 100.0f;
+	const float MAP_WIDTH = 50.0f;
     const float STREET_WIDTH = 5.0f;
 
     // TODO: Ajouter ces attributs

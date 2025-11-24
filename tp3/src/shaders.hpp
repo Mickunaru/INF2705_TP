@@ -51,9 +51,12 @@ class Grass : public ShaderProgram
 public:
     GLuint modelViewULoc;
     GLuint mvpULoc;
+
+    void setMatrices(glm::mat4& modelView, glm::mat4& mvp);
+
+protected:
     virtual void load() override;
     virtual void getAllUniformLocations() override;
-    
 };
 
 
