@@ -27,7 +27,6 @@ out ATTRIBS_GS_OUT
 
 
 uniform mat4 mvp;
-uniform mat4 modelView;
 
 // Fonction pseudo aléatoire, utiliser le paramètre co pour avoir une valeur différente en sortie
 float rand(vec2 co){
