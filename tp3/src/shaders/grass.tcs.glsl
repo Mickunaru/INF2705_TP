@@ -1,6 +1,5 @@
 #version 400 core
 
-// TODO: À remplir
 layout(vertices = 3) out;
 
 uniform float tessLevel = 8.0;
@@ -28,11 +27,9 @@ float tessLevelFromDistance(float dist)
 
 void main()
 {
-    // Chaque TCS recopie attributs entrée -> sortie
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
     attribsOut[gl_InvocationID].worldPos = attribsIn[gl_InvocationID].worldPos;
     
-    // TODO: Définir le niveau de tessellation une fois par patch.
     if (gl_InvocationID == 0)
         {
         
@@ -42,11 +39,10 @@ void main()
 
             float tess = tessLevelFromDistance(dist);
         
-            // La tessellation extérieur
             gl_TessLevelOuter[0] = max(tess * 0.9, 1.0);
             gl_TessLevelOuter[1] =  max(tess , 1.0);
             gl_TessLevelOuter[2] =  max(tess * 1.1, 1.0);
-            // La tessellation de l'interieur est le maximum des tessellations extérieurs
+
             gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2]) / 3.0;
         }
 }

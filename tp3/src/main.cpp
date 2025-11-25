@@ -93,7 +93,6 @@ struct Particle
 };
 
 // Matériels
-
 Material defaultMat =
 {
     {0.0f, 0.0f, 0.0f, 0.0f},
@@ -209,18 +208,6 @@ struct App : public OpenGLApplication
 
     void init() override
     {
-        // TODO: Allocation des SSBO.
-        //       Allouer suffisament d'espace pour le nombre maximal de particules.
-        //       Seulement le buffer en entrée à besoin d'être initialisé à 0.
-        //       Réfléchisser au type d'usage.
-        
-        // TODO: Créer un vao pour le dessin des particules et activer les attributs nécessaires.
-
-        // TODO: Création des nouveaux shaders.
-        
-        // TODO: Initialisation de la nouvelle texture pour les particules.
-        // "../textures/smoke.png"
-
         setKeybindMessage(
             "ESC : quitter l'application." "\n"
             "T : changer de scène." "\n"
@@ -235,16 +222,10 @@ struct App : public OpenGLApplication
             "Espace : activer/désactiver la souris." "\n"
         );
 
-        // Config de base.
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
-        glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
-
-        // TODO: Création des nouveaux shaders
-
-        // TODO: Initialisation des meshes (béziers, patches)
-        // TP1 polygone; au lieu de faire le point tu fait la forme pour faire un plan
+        glEnable(GL_PROGRAM_POINT_SIZE);
 
         edgeEffectShader_.create();
         celShadingShader_.create();
@@ -441,8 +422,6 @@ struct App : public OpenGLApplication
         ImGui::Begin("Scene Parameters");
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
 
-        // TODO: Au besoin, ajouter la recharge de vos nouveaux shaders
-        //       après if (ImGui::Button("Reload Shaders")).
         if (ImGui::Button("Reload Shaders"))
         {
             CHECK_GL_ERROR;
@@ -768,10 +747,7 @@ struct App : public OpenGLApplication
                 }
             };
 
-            // Side 1: Negative Z (trees based on initStaticModelMatrices)
             createPatches(-MAP_WIDTH / 2.0f, -streetHalfWidth);
-
-            // Side 2: Positive Z (streetlights are here)
             createPatches(streetHalfWidth, MAP_WIDTH / 2.0f);
         }
 
@@ -999,14 +975,12 @@ struct App : public OpenGLApplication
     {
         CHECK_GL_ERROR;
         ImGui::Begin("Scene Parameters");
-        // TODO: À ajouter
         ImGui::SliderInt("Bezier Number Of Points", (int*)&bezierNPoints, 0, 16);
         if (ImGui::Button("Animate Camera"))
         {
             isAnimatingCamera = true;
             cameraMode = 1;
         }
-        //
         if (ImGui::Button("Toggle Day/Night"))
         {
             isDay_ = !isDay_;
@@ -1027,9 +1001,6 @@ struct App : public OpenGLApplication
         {
             if (cameraAnimation < 5)
             {
-                // TODO: Animation de la caméra
-                // cameraPosition_ = ...
-
                 cameraAnimation += deltaTime_ / 3.0;
 
                 float progress = cameraAnimation / 5.0f;
@@ -1050,7 +1021,6 @@ struct App : public OpenGLApplication
             }
             else
             {
-                // Remise à 0 de l'orientation
                 glm::vec3 diff = car_.position - cameraPosition_;
                 cameraOrientation_.y = M_PI + atan2(diff.z, diff.x);
 
@@ -1067,8 +1037,6 @@ struct App : public OpenGLApplication
         if (hasNumberOfSidesChanged)
         {
             oldBezierNPoints = bezierNPoints;
-
-            // TODO: Calcul et mise à jour de la courbe
             calculateCurveVertices(bezierNPoints);
         }
 
@@ -1081,8 +1049,6 @@ struct App : public OpenGLApplication
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
 
-        // TODO: Attention à l'endroit où vous faites votre dessin, la texture des particules est transparente.
-        CHECK_GL_ERROR;
         // Particles    
         totalTime += deltaTime_;
         timerParticles_ += deltaTime_;        
@@ -1094,30 +1060,6 @@ struct App : public OpenGLApplication
         nParticles_ += particlesToAdd;
         if (nParticles_ > MAX_PARTICLES_)
             nParticles_ = MAX_PARTICLES_;
-
-        // Particles update
-
-        // TODO: Mise à jour des données à l'aide du compute shader
-        //       Envoyer vos uniforms.
-
-        // Utiliser car_.carModel pour calculer la nouvelle position et direction d'émission de particule.
-        // glm::vec3 exhaustPos = vec3(2.0, 0.24, -0.43);
-        // glm::vec3 exhaustDir = vec3(1, 0, 0);
-
-        // TODO: Configurer les buffers d'entrée et de sortie.
-
-        // TODO: Envois de la commande de calcul.
-        //       Pas besoin d'optimiser le nombre de work group vs la taille local (dans le shader).
-
-
-        // Particles draw
-
-        // TODO: Dessin des particules. Utiliser le nombre de particules actuellement utilisées.
-        //       Utiliser la texture et envoyer vos uniforms.
-        //       Il sera nécessaire de spécifier les entrée en spécifiant le buffer d'entrée.
-        //       Activer le blending et restaurer l'état du contexte modifié.
-
-        // TODO: Interchanger les deux buffers, celui en entrée devient la sortie, et vice versa.
 
         glm::vec3 exhaustPos = vec3(2.0, 0.24, -0.43);
         glm::vec3 exhaustDir = vec3(1, 0, 0);
@@ -1152,18 +1094,12 @@ struct App : public OpenGLApplication
         skybox_.draw();
         glDepthFunc(GL_LESS);
 
-        // TODO: Dessin du gazon
-        // glDraw...
         grassShader_.use();
-
         setMaterial(grassMat);
         drawPatch(projView, view);
-        //CHECK_GL_ERROR;
 
         celShadingShader_.use();
 
-        // TODO: Dessin de la courbe
-        // glDraw...
         setMaterial(bezierMat);
         drawCurve(projView, view);
 
@@ -1292,7 +1228,6 @@ private:
     float cameraAnimation = 0.f;
     bool isAnimatingCamera = false;
 
-    // TODO: Ajouter les attributs de vboCurve, eboCurve, vaoCurve nécessaire
     GLuint vaoCurve, vboCurve, eboCurve;
     std::vector<Vertex> curveVertices;
     std::vector<unsigned int> indicesCurve;
@@ -1309,7 +1244,6 @@ private:
     static const unsigned int MAX_PARTICLES_ = 64;
     unsigned int nParticles_;    
 
-    // Ssbo
     ShaderStorageBuffer particles_[2];
 };
 

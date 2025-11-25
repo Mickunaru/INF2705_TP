@@ -23,16 +23,6 @@ uniform mat4 view;
 
 void main()
 {
-
-    // TODO: Convertiser les points en entrée en carrées.
-    //       Un côté est de la taille particle::size.
-    //       Les carrées sont toujours orientés vers la caméra et tourne
-    //       sur eux même sur l'axe des z.
-    //       Les coordonnées de texture peuvent être généré à partir de la position du point.
-    //
-    //       Il est important d'écrire chaque attribut de sortie du shader de géometrie,
-    //       autrement c'est un comportement non défini.
-
     vec3 center = attribIn[0].position;
 
     float size = attribIn[0].size;

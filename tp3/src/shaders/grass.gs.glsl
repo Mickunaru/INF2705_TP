@@ -1,27 +1,17 @@
 #version 330 core
 
-// TODO: À remplir
 layout(points) in;
 layout(triangle_strip, max_vertices = 7) out;
 
-//out ATTRIBS_TES_OUT // Sent from tess
-//{
-//vec3 worldPos;
-//float pointSize;
-//float clipDist[];
-//} attribsOut[];
-//const int CLIP_COUNT = 2;
 
 in ATTRIBS_TES_OUT
 {
-    // TODO: Ajouter les attributs si nécessaire
     vec3 worldPos;
     float height;
 } attribsIn[];
 
 out ATTRIBS_GS_OUT
 {
-    // TODO: Ajouter les attributs si nécessaire
     float height;
 } attribsOut;
 
