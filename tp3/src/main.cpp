@@ -32,7 +32,7 @@ using namespace glm;
 
 struct Vertex {
     glm::vec3 position;
-    glm::vec4 color; // We might need to remove this as its not used
+    glm::vec4 color;
 };
 
 struct Patch {
@@ -80,7 +80,6 @@ struct BezierCurve
     glm::vec3 p1;
 };
 
-// Ne pas modifier
 struct Particle
 {
     glm::vec3 position;
@@ -92,7 +91,6 @@ struct Particle
     GLfloat maxTimeToLive;
 };
 
-// Matériels
 Material defaultMat =
 {
     {0.0f, 0.0f, 0.0f, 0.0f},
@@ -1046,8 +1044,7 @@ struct App : public OpenGLApplication
         glm::mat4 view = getViewMatrix();
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
-
-        // Particles    
+ 
         totalTime += deltaTime_;
         timerParticles_ += deltaTime_;        
         const float particlesSpawnInterval = 0.2f;
