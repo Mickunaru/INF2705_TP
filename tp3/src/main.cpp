@@ -1060,7 +1060,7 @@ struct App : public OpenGLApplication
         glm::vec3 exhaustDir = vec3(1, 0, 0);
 
         glm::vec3 emitterPos = glm::vec3(car_.carModel * glm::vec4(exhaustPos, 1.0f));
-        glm::vec3 emitterDir = glm::normalize(car_.carModel * glm::vec4(exhaustDir, 1.0f));
+        glm::vec3 emitterDir = glm::normalize(glm::vec3(car_.carModel * glm::vec4(exhaustDir, 0.0f)));
 
         particlesUpdateShader_.use();
 
