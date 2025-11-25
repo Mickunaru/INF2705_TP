@@ -725,25 +725,32 @@ struct App : public OpenGLApplication
                     float patchEndX = std::min(x + patchSize, endX);
                     float patchEndZ = std::min(z + patchSize, endZ);
 
+                    float actualSizeX = patchEndX - x;
+                    float actualSizeZ = patchEndZ - z;
+
+                    unsigned int pointsX = std::max(1u, unsigned(nPoints * (actualSizeX / patchSize)));
+                    unsigned int pointsZ = std::max(1u, unsigned(nPoints * (actualSizeZ / patchSize)));
+
+                    unsigned int gridWidth = pointsZ + 1;
+
                     unsigned int baseIndex = patchesVertices.size();
 
-                    for (unsigned int i = 0; i <= nPoints; ++i) {
-                        float u = static_cast<float>(i) / nPoints;
-                        for (unsigned int k = 0; k <= nPoints; ++k) {
-                            float v = static_cast<float>(k) / nPoints;
+                    for (unsigned int i = 0; i <= pointsX; ++i) {
+                        float u = static_cast<float>(i) / pointsX;
+
+                        for (unsigned int k = 0; k <= pointsZ; ++k) {
+                            float v = static_cast<float>(k) / pointsZ;
                             glm::vec3 pos(
-                                x + u * (patchEndX - x),
+                                x + u * actualSizeX,
                                 groundY,
-                                z + v * (patchEndZ - z)
+                                z + v * actualSizeZ
                             );
                             patchesVertices.push_back({ pos, glm::vec4(1.0f) });
                         }
                     }
 
-                    for (unsigned int i = 0; i < nPoints; ++i)
-                    {
-                        for (unsigned int k = 0; k < nPoints; ++k)
-                        {
+                    for (unsigned int i = 0; i < pointsX; ++i) {
+                        for (unsigned int k = 0; k < pointsZ; ++k) {
                             unsigned int topLeft = baseIndex + i * gridWidth + k;
                             unsigned int topRight = topLeft + 1;
                             unsigned int bottomLeft = topLeft + gridWidth;
@@ -763,15 +770,10 @@ struct App : public OpenGLApplication
         };
 
         // Side 1: Negative Z (trees based on initStaticModelMatrices)
-        float startZ1 = -MAP_WIDTH / 2.0f;
-        float endZ1 = -streetHalfWidth;
+        createPatches(-MAP_WIDTH / 2.0f, -streetHalfWidth);
 
         // Side 2: Positive Z (streetlights are here)
-        float startZ2 = streetHalfWidth;
-        float endZ2 = MAP_WIDTH / 2.0f;
-
-        createPatches(startZ1, endZ1);
-        createPatches(startZ2, endZ2);
+        createPatches(streetHalfWidth, MAP_WIDTH / 2.0f);
     }
 
     void drawCurve(glm::mat4& projView, glm::mat4& view)
