@@ -44,7 +44,7 @@ void main()
         pOut.position = emitterPosition;
         pOut.zOrientation = rand01() * 2 * PI;
         pOut.velocity = emitterDirection * 0.3 + vec3(0.0, 0.2, 0.0);
-        pOut.color = vec4(0.5, 0.5, 0.5, 1.0);
+        pOut.color = vec4(0.5, 0.5, 0.5, 0.0);
         pOut.size = vec2(0.2, 0.2);
 
         float life = 1.5 + rand01() * 0.5;
