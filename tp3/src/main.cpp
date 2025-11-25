@@ -32,7 +32,7 @@ using namespace glm;
 
 struct Vertex {
     glm::vec3 position;
-    glm::vec4 color; // We might need to remove this as its not used
+    glm::vec4 color;
 };
 
 struct Patch {
@@ -80,7 +80,6 @@ struct BezierCurve
     glm::vec3 p1;
 };
 
-// Ne pas modifier
 struct Particle
 {
     glm::vec3 position;
@@ -92,7 +91,6 @@ struct Particle
     GLfloat maxTimeToLive;
 };
 
-// Matériels
 Material defaultMat =
 {
     {0.0f, 0.0f, 0.0f, 0.0f},
@@ -841,8 +839,6 @@ struct App : public OpenGLApplication
             std::cerr << "Error: Division by zero is not allowed." << std::endl;
             return mat4(1);
         }
-
-        // TODO: Pertinent de modifier la distance ici.
         const float far = 300.f;
         float aspect = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
         glm::mat4 projection = glm::perspective(glm::radians(70.0f), aspect, 0.1f, far);
@@ -1048,8 +1044,7 @@ struct App : public OpenGLApplication
         glm::mat4 view = getViewMatrix();
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
-
-        // Particles    
+ 
         totalTime += deltaTime_;
         timerParticles_ += deltaTime_;        
         const float particlesSpawnInterval = 0.2f;
@@ -1065,7 +1060,7 @@ struct App : public OpenGLApplication
         glm::vec3 exhaustDir = vec3(1, 0, 0);
 
         glm::vec3 emitterPos = glm::vec3(car_.carModel * glm::vec4(exhaustPos, 1.0f));
-        glm::vec3 emitterDir = glm::normalize(car_.carModel * glm::vec4(exhaustDir, 1.0f));
+        glm::vec3 emitterDir = glm::normalize(glm::vec3(car_.carModel * glm::vec4(exhaustDir, 0.0f)));
 
         particlesUpdateShader_.use();
 
@@ -1217,7 +1212,6 @@ private:
 	const float MAP_WIDTH = 50.0f;
     const float STREET_WIDTH = 5.0f;
 
-    // TODO: Ajouter ces attributs
     unsigned int bezierNPoints = 3;
     unsigned int oldBezierNPoints = 0;
     unsigned int patchesNPoints = 3;
