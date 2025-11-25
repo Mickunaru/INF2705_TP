@@ -3,7 +3,6 @@
 layout(points) in;
 layout(triangle_strip, max_vertices = 7) out;
 
-
 in ATTRIBS_TES_OUT
 {
     vec3 worldPos;
@@ -15,11 +14,8 @@ out ATTRIBS_GS_OUT
     float height;
 } attribsOut;
 
-
 uniform mat4 mvp;
-uniform mat4 modelView;
 
-// Fonction pseudo aléatoire, utiliser le paramètre co pour avoir une valeur différente en sortie
 float rand(vec2 co){
     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
 }
@@ -56,6 +52,5 @@ void main()
         gl_Position = mvp * vec4(pos + r, 1.0);
         EmitVertex();
     }
-    
     EndPrimitive();
 }

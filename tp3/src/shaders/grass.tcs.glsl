@@ -2,9 +2,7 @@
 
 layout(vertices = 3) out;
 
-uniform float tessLevel = 8.0;
 uniform mat4 modelView;
-uniform mat4 mvp;
 
 in ATTRIBS_VS_OUT {
     vec3 worldPos;
@@ -17,11 +15,13 @@ out ATTRIBS_TCS_OUT {
 
 float tessLevelFromDistance(float dist)
 {
-    const float MIN_TESS = 4.0;
-    const float MAX_TESS = 16.0;
-    const float MIN_DIST = 5.0;
-    const float MAX_DIST = 50.0;
-    float t = clamp((dist - MIN_DIST) / (MAX_DIST - MIN_DIST), 0.0, 1.0);
+    const float MIN_TESS = 2;
+    const float MAX_TESS = 32;
+
+    const float MIN_DIST = 10.0f;
+    const float MAX_DIST = 40.0f;
+
+    float t = smoothstep(MIN_DIST, MAX_DIST, dist);
     return mix(MAX_TESS, MIN_TESS, t);
 }
 
@@ -32,17 +32,26 @@ void main()
     
     if (gl_InvocationID == 0)
         {
-        
-            vec3 center = (attribsIn[0].worldPos + attribsIn[1].worldPos + attribsIn[2].worldPos) / 3.0;
-            vec3 viewPos = (modelView * vec4(center, 1.0)).xyz;
-            float dist = length(viewPos);
+            vec3 p0 = (modelView * gl_in[0].gl_Position).xyz;
+            vec3 p1 = (modelView * gl_in[1].gl_Position).xyz;
+            vec3 p2 = (modelView * gl_in[2].gl_Position).xyz;
 
-            float tess = tessLevelFromDistance(dist);
-        
-            gl_TessLevelOuter[0] = max(tess * 0.9, 1.0);
-            gl_TessLevelOuter[1] =  max(tess , 1.0);
-            gl_TessLevelOuter[2] =  max(tess * 1.1, 1.0);
+            vec3 m01 = (p0 + p1) * 0.5;
+            vec3 m12 = (p1 + p2) * 0.5;
+            vec3 m20 = (p2 + p0) * 0.5;
 
-            gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2]) / 3.0;
+            float d01 = length(m01);
+            float d12 = length(m12);
+            float d20 = length(m20);
+
+            float t01 = tessLevelFromDistance(d01);
+            float t12 = tessLevelFromDistance(d12);
+            float t20 = tessLevelFromDistance(d20);
+
+            gl_TessLevelOuter[0] = t12;
+            gl_TessLevelOuter[1] = t20;
+            gl_TessLevelOuter[2] = t01;
+
+            gl_TessLevelInner[0] = max(t12, max(t20, t01));
         }
 }

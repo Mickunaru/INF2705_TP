@@ -692,7 +692,7 @@ struct App : public OpenGLApplication
             indicesPatch.clear();
 
             const float groundY = -0.1f;
-            const float patchSize = 10.0f;
+            const float patchSize = 15.0f;
             const float startX = -MAP_LENGTH / 2.0f;
             const float endX = MAP_LENGTH / 2.0f;
             const float streetHalfWidth = STREET_WIDTH / 2.0f;
