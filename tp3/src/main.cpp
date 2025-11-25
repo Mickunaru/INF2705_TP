@@ -399,6 +399,8 @@ struct App : public OpenGLApplication
         glEnableVertexAttribArray(3);
         glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, size));
 
+        glBindVertexArray(0);
+
         CHECK_GL_ERROR;
     }
 
