@@ -1159,8 +1159,7 @@ struct App : public OpenGLApplication
         // glDraw...
         grassShader_.use();
 
-        //setMaterial(grassMat);
-        
+        setMaterial(grassMat);
         drawPatch(projView, view);
         //CHECK_GL_ERROR;
 
