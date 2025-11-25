@@ -708,75 +708,72 @@ struct App : public OpenGLApplication
         }
     }
 
-    void calculatePatchesVertices(unsigned int nPoints) {
-        patchesVertices.clear();
-        indicesPatch.clear();
+        void calculatePatchesVertices(unsigned int nPoints) {
+            patchesVertices.clear();
+            indicesPatch.clear();
 
-        const float groundY = -0.1f;
-        const float patchSize = 5.0f;
-        const float startX = -MAP_LENGTH / 2.0f;
-        const float endX = MAP_LENGTH / 2.0f;
-        const float streetHalfWidth = STREET_WIDTH / 2.0f;
+            const float groundY = -0.1f;
+            const float patchSize = 10.0f;
+            const float startX = -MAP_LENGTH / 2.0f;
+            const float endX = MAP_LENGTH / 2.0f;
+            const float streetHalfWidth = STREET_WIDTH / 2.0f;
 
-        auto createPatches = [&](float startZ, float endZ) {
-            unsigned int gridWidth = nPoints + 1;
+            auto createPatches = [&](float startZ, float endZ) {
+                for (float x = startX; x < endX; x += patchSize) {
+                    for (float z = startZ; z < endZ; z += patchSize) {
 
-            for (float x = startX; x < endX; x += patchSize) {
-                for (float z = startZ; z < endZ; z += patchSize) {
+                        float patchEndX = std::min(x + patchSize, endX);
+                        float patchEndZ = std::min(z + patchSize, endZ);
 
-                    float patchEndX = std::min(x + patchSize, endX);
-                    float patchEndZ = std::min(z + patchSize, endZ);
+                        float actualSizeX = patchEndX - x;
+                        float actualSizeZ = patchEndZ - z;
 
-                    float actualSizeX = patchEndX - x;
-                    float actualSizeZ = patchEndZ - z;
+                        unsigned int pointsX = std::max(1u, unsigned(nPoints * (actualSizeX / patchSize)));
+                        unsigned int pointsZ = std::max(1u, unsigned(nPoints * (actualSizeZ / patchSize)));
 
-                    unsigned int pointsX = std::max(1u, unsigned(nPoints * (actualSizeX / patchSize)));
-                    unsigned int pointsZ = std::max(1u, unsigned(nPoints * (actualSizeZ / patchSize)));
+                        unsigned int gridWidth = pointsZ + 1;
+                        unsigned int baseIndex = patchesVertices.size();
 
-                    unsigned int gridWidth = pointsZ + 1;
+                        for (unsigned int i = 0; i <= pointsX; ++i) {
+                            float u = static_cast<float>(i) / pointsX;
 
-                    unsigned int baseIndex = patchesVertices.size();
-
-                    for (unsigned int i = 0; i <= pointsX; ++i) {
-                        float u = static_cast<float>(i) / pointsX;
-
-                        for (unsigned int k = 0; k <= pointsZ; ++k) {
-                            float v = static_cast<float>(k) / pointsZ;
-                            glm::vec3 pos(
-                                x + u * actualSizeX,
-                                groundY,
-                                z + v * actualSizeZ
-                            );
-                            patchesVertices.push_back({ pos, glm::vec4(1.0f) });
+                            for (unsigned int k = 0; k <= pointsZ; ++k) {
+                                float v = static_cast<float>(k) / pointsZ;
+                                glm::vec3 pos(
+                                    x + u * actualSizeX,
+                                    groundY,
+                                    z + v * actualSizeZ
+                                );
+                                patchesVertices.push_back({ pos, glm::vec4(1.0f) });
+                            }
                         }
-                    }
 
-                    for (unsigned int i = 0; i < pointsX; ++i) {
-                        for (unsigned int k = 0; k < pointsZ; ++k) {
-                            unsigned int topLeft = baseIndex + i * gridWidth + k;
-                            unsigned int topRight = topLeft + 1;
-                            unsigned int bottomLeft = topLeft + gridWidth;
-                            unsigned int bottomRight = bottomLeft + 1;
+                        for (unsigned int i = 0; i < pointsX; ++i) {
+                            for (unsigned int k = 0; k < pointsZ; ++k) {
+                                unsigned int topLeft = baseIndex + i * gridWidth + k;
+                                unsigned int topRight = topLeft + 1;
+                                unsigned int bottomLeft = topLeft + gridWidth;
+                                unsigned int bottomRight = bottomLeft + 1;
 
-                            indicesPatch.push_back(topLeft);
-                            indicesPatch.push_back(bottomLeft);
-                            indicesPatch.push_back(topRight);
+                                indicesPatch.push_back(topLeft);
+                                indicesPatch.push_back(bottomLeft);
+                                indicesPatch.push_back(topRight);
 
-                            indicesPatch.push_back(topRight);
-                            indicesPatch.push_back(bottomLeft);
-                            indicesPatch.push_back(bottomRight);
+                                indicesPatch.push_back(topRight);
+                                indicesPatch.push_back(bottomLeft);
+                                indicesPatch.push_back(bottomRight);
+                            }
                         }
                     }
                 }
-            }
-        };
+            };
 
-        // Side 1: Negative Z (trees based on initStaticModelMatrices)
-        createPatches(-MAP_WIDTH / 2.0f, -streetHalfWidth);
+            // Side 1: Negative Z (trees based on initStaticModelMatrices)
+            createPatches(-MAP_WIDTH / 2.0f, -streetHalfWidth);
 
-        // Side 2: Positive Z (streetlights are here)
-        createPatches(streetHalfWidth, MAP_WIDTH / 2.0f);
-    }
+            // Side 2: Positive Z (streetlights are here)
+            createPatches(streetHalfWidth, MAP_WIDTH / 2.0f);
+        }
 
     void drawCurve(glm::mat4& projView, glm::mat4& view)
     {
