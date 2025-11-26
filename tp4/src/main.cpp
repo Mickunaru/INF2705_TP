@@ -146,9 +146,23 @@ struct App : public OpenGLApplication
         skyboxTexture_.load(pathes);
 
         loadModels();
+        initStaticModelMatrices();
 
         material_.allocate(&defaultMat, sizeof(Material));
         material_.setBindingIndex(0);
+
+        lightsData_.dirLight =
+        {
+            {0.2f, 0.2f, 0.2f, 0.0f},
+            {1.0f, 1.0f, 1.0f, 0.0f},
+            {0.5f, 0.5f, 0.5f, 0.0f},
+            {0.5f, -1.0f, 0.5f, 0.0f}
+        };
+
+		setLightingUniform();
+
+        lights_.allocate(&lightsData_, sizeof(lightsData_));
+        lights_.setBindingIndex(1);
 
         std::vector<Particle> zeroData(MAX_PARTICLES_, Particle());
         particles_[0].allocate(zeroData.data(), MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_DRAW);
@@ -178,6 +192,19 @@ struct App : public OpenGLApplication
 
         CHECK_GL_ERROR;
 	}
+
+    void initStaticModelMatrices()
+    {
+		crystalModel_ = glm::mat4(1.0f);
+		crystalModel_ = glm::translate(crystalModel_, glm::vec3(0.0f, 0.0f, -2.0f));
+    }
+
+    void setLightingUniform()
+    {
+        celShadingShader_.use();
+        float ambientIntensity = 0.05;
+        glUniform3f(celShadingShader_.globalAmbientULoc, ambientIntensity, ambientIntensity, ambientIntensity);
+    }
 
 	// Appelée à chaque trame. Le buffer swap est fait juste après.
 	void drawFrame() override
@@ -301,17 +328,16 @@ struct App : public OpenGLApplication
     void loadModels()
     {
         skybox_.load("../models/skybox.ply");
-		crystal_.load("../models/crystal_flat.ply");
+		crystal_.load("../models/crystal.ply");
     }
 
     void drawCrystal(glm::mat4& projView, glm::mat4& view)
     {
         crystalTexture_.use();
 
-		//TODO: maybe change model matrix or have multiple crystals
-		glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 mvp = projView * model;
-        celShadingShader_.setMatrices(mvp, view, model);
+		//TODO: maybe have multiple crystals
+        glm::mat4 mvp = projView * crystalModel_;
+        celShadingShader_.setMatrices(mvp, view, crystalModel_);
         crystal_.draw();
     }
 
@@ -321,8 +347,7 @@ struct App : public OpenGLApplication
         particleTexture_.use();
 
 		// TODO: maybe change model matrix or have multiple particle emitters
-		glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 particleModelView = view * model;
+        glm::mat4 particleModelView = view * crystalModel_;
         particlesDrawShader_.setMatrices(particleModelView, projView, view);
 
         glEnable(GL_BLEND);
@@ -393,11 +418,10 @@ struct App : public OpenGLApplication
             nParticles_ = MAX_PARTICLES_;
 
 		// TODO: maybe change model and have multiple emitter positions
-		glm::mat4 model = glm::mat4(1.0f);
 		glm::vec4 initPos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		glm::vec4 initDir = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-        glm::vec3 emitterPos = glm::vec3(model * initPos);
-        glm::vec3 emitterDir = glm::normalize(glm::vec3(model * initDir));
+        glm::vec3 emitterPos = glm::vec3(crystalModel_ * initPos);
+        glm::vec3 emitterDir = glm::normalize(glm::vec3(crystalModel_ * initDir));
 
         particlesUpdateShader_.use();
 
@@ -444,6 +468,14 @@ private:
 	Model crystal_;
 
     UniformBuffer material_;
+    UniformBuffer lights_;
+
+    glm::mat4 crystalModel_;
+
+    struct {
+        DirectionalLight dirLight;
+        SpotLight spotLights[16];
+    } lightsData_;
 
     glm::vec3 cameraPosition_;
     glm::vec2 cameraOrientation_;
@@ -479,6 +511,8 @@ int main(int argc, char* argv[])
 	settings.context.majorVersion = 3;
 	settings.context.minorVersion = 3;
 	settings.context.attributeFlags = sf::ContextSettings::Attribute::Core;
+    settings.videoMode.size.x = 1920;
+	settings.videoMode.size.y = 1024;
 
 	App app;
 	app.run(argc, argv, "Tp4", settings);
