@@ -12,10 +12,16 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
+#include "happly.h"
 #include <imgui/imgui.h>
 
 #include <inf2705/OpenGLApplication.hpp>
+
+#include "model.hpp"
+#include "shaders.hpp"
+#include "textures.hpp"
+#include "uniform_buffer.hpp"
+#include "shader_storage_buffer.hpp"
 
 #define CHECK_GL_ERROR printGLError(__FILE__, __LINE__)
 
