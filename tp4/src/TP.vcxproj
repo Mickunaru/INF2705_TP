@@ -171,12 +171,22 @@
     <ClCompile Include="model.cpp" />
     <ClCompile Include="shaders.cpp" />
     <ClCompile Include="shader_program.cpp" />
+    <ClCompile Include="shader_storage_buffer.cpp" />
     <ClCompile Include="textures.cpp" />
+    <ClCompile Include="uniform_buffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />
     <None Include=".vscode\settings.json" />
     <None Include="README.md" />
+    <None Include="shaders\particlesDraw.fs.glsl" />
+    <None Include="shaders\particlesDraw.gs.glsl" />
+    <None Include="shaders\particlesDraw.vs.glsl" />
+    <None Include="shaders\particlesUpdate.cs.glsl" />
+    <None Include="shaders\phong.fs.glsl" />
+    <None Include="shaders\phong.vs.glsl" />
+    <None Include="shaders\sky.fs.glsl" />
+    <None Include="shaders\sky.vs.glsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\inf2705\OpenGLApplication.hpp" />
@@ -186,7 +196,9 @@
     <ClInclude Include="model.hpp" />
     <ClInclude Include="shaders.hpp" />
     <ClInclude Include="shader_program.hpp" />
+    <ClInclude Include="shader_storage_buffer.hpp" />
     <ClInclude Include="textures.hpp" />
+    <ClInclude Include="uniform_buffer.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

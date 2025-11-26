@@ -28,6 +28,61 @@
 using namespace gl;
 using namespace glm;
 
+struct Vertex {
+    glm::vec3 position;
+    glm::vec4 color;
+};
+
+struct Material
+{
+    glm::vec4 emission; // vec3, but padded
+    glm::vec4 ambient;  // vec3, but padded
+    glm::vec4 diffuse;  // vec3, but padded
+    glm::vec3 specular;
+    GLfloat shininess;
+};
+
+struct DirectionalLight
+{
+    glm::vec4 ambient;   // vec3, but padded
+    glm::vec4 diffuse;   // vec3, but padded
+    glm::vec4 specular;  // vec3, but padded    
+    glm::vec4 direction; // vec3, but padded
+};
+
+struct SpotLight
+{
+    glm::vec4 ambient;   // vec3, but padded
+    glm::vec4 diffuse;   // vec3, but padded
+    glm::vec4 specular;  // vec3, but padded
+
+    glm::vec4 position;  // vec3, but padded
+    glm::vec3 direction;
+    GLfloat exponent;
+    GLfloat openingAngle;
+
+    GLfloat padding[3];
+};
+
+struct Particle
+{
+    glm::vec3 position;
+    GLfloat zOrientation;
+    glm::vec4 velocity; // vec3, but padded
+    glm::vec4 color;
+    glm::vec2 size;
+    GLfloat timeToLive;
+    GLfloat maxTimeToLive;
+};
+
+Material defaultMat =
+{
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {0.7f, 0.7f, 0.7f},
+    10.0f
+};
 
 struct App : public OpenGLApplication
 {
@@ -36,6 +91,9 @@ struct App : public OpenGLApplication
     , cameraOrientation_(0.f, 0.f)
     , currentScene_(0)
     , isMouseMotionEnabled_(false)
+    , totalTime(0.0)
+    , timerParticles_(0.0)
+    , nParticles_(0)
     {
     }
 	
@@ -57,12 +115,76 @@ struct App : public OpenGLApplication
 		);
 
 		// Config de base.
+        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_PROGRAM_POINT_SIZE);
+
+        celShadingShader_.create();
+        skyShader_.create();
+        particlesDrawShader_.create();
+        particlesUpdateShader_.create();
+
+		crystalTexture_.load("../textures/crystal-uv-unwrap.png");
+        crystalTexture_.setWrap(GL_CLAMP_TO_EDGE);
+        crystalTexture_.setFiltering(GL_LINEAR);
+
+        // TODO: Change to shine particle sprite later on
+        particleTexture_.load("../textures/smoke.png");
+        particleTexture_.setWrap(GL_REPEAT);
+        particleTexture_.setFiltering(GL_LINEAR);
+        particleTexture_.enableMipmap();
+
+        const char* pathes[] = {
+            "../textures/skybox/px.bmp",
+            "../textures/skybox/nx.bmp",
+            "../textures/skybox/py.bmp",
+            "../textures/skybox/ny.bmp",
+            "../textures/skybox/pz.bmp",
+            "../textures/skybox/nz.bmp",
+        };
+        skyboxTexture_.load(pathes);
+
+        loadModels();
+
+        material_.allocate(&defaultMat, sizeof(Material));
+        material_.setBindingIndex(0);
+
+        std::vector<Particle> zeroData(MAX_PARTICLES_, Particle());
+        particles_[0].allocate(zeroData.data(), MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_DRAW);
+        particles_[1].allocate(nullptr, MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_DRAW);
+
+        particles_[0].setBindingIndex(0);
+        particles_[1].setBindingIndex(1);
+
+        glGenVertexArrays(1, &vaoParticles_);
+        glBindVertexArray(vaoParticles_);
+
+        particles_[0].bindAsArray();
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, position));
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, zOrientation));
+
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, color));
+
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, size));
+
+        glBindVertexArray(0);
+
+        CHECK_GL_ERROR;
 	}
 
 	// Appelée à chaque trame. Le buffer swap est fait juste après.
 	void drawFrame() override
 	{
-        
+        CHECK_GL_ERROR;
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
         ImGui::Begin("Scene Parameters");
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
         ImGui::End();
@@ -71,6 +193,7 @@ struct App : public OpenGLApplication
         {
             case 0: sceneMain();  break;
         }
+        CHECK_GL_ERROR;
 	}
 
 	// Appelée lorsque la fenêtre se ferme.
@@ -174,13 +297,154 @@ struct App : public OpenGLApplication
         cameraPosition_ += positionOffset * glm::vec3(deltaTime_);
     }
     
+    // TODO: Add more models
+    void loadModels()
+    {
+        skybox_.load("../models/skybox.ply");
+		crystal_.load("../models/crystal_flat.ply");
+    }
+
+    void drawCrystal(glm::mat4& projView, glm::mat4& view)
+    {
+        crystalTexture_.use();
+
+		//TODO: maybe change model matrix or have multiple crystals
+		glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 mvp = projView * model;
+        celShadingShader_.setMatrices(mvp, view, model);
+        crystal_.draw();
+    }
+
+    void drawParticles(glm::mat4& projView, glm::mat4& view)
+    {
+        particlesDrawShader_.use();
+        particleTexture_.use();
+
+		// TODO: maybe change model matrix or have multiple particle emitters
+		glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 particleModelView = view * model;
+        particlesDrawShader_.setMatrices(particleModelView, projView, view);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDepthMask(GL_FALSE);
+
+        glBindVertexArray(vaoParticles_);
+        particles_[0].bindAsArray();
+        glDrawArrays(GL_POINTS, 0, nParticles_);
+
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
+
+        std::swap(particles_[0], particles_[1]);
+    }
+
+    glm::mat4 getViewMatrix()
+    {
+        glm::mat4 view = glm::mat4(1.0);
+        view = glm::rotate(view, -cameraOrientation_.x, glm::vec3(1.0, 0.0, 0.0));
+        view = glm::rotate(view, -cameraOrientation_.y, glm::vec3(0.0, 1.0, 0.0));
+        view = glm::translate(view, -cameraPosition_);
+        return view;
+    }
+
+    glm::mat4 getPerspectiveProjectionMatrix()
+    {
+        sf::Vector2u windowSize = window_.getSize();
+
+        if (windowSize.y == 0) {
+            std::cerr << "Error: Division by zero is not allowed." << std::endl;
+            return mat4(1);
+        }
+        const float far = 300.f;
+        float aspect = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
+        glm::mat4 projection = glm::perspective(glm::radians(70.0f), aspect, 0.1f, far);
+
+        return projection;
+    }
+
+    void setMaterial(Material& mat)
+    {
+        material_.updateData(&mat, 0, sizeof(Material));
+    }
     
     void sceneMain()
     {
+        CHECK_GL_ERROR;
+        ImGui::Begin("Scene Parameters");
+		// TODO: Add some cool parameters to tweak
+        ImGui::End();
+
+        updateCameraInput();
+
+        glm::mat4 view = getViewMatrix();
+        glm::mat4 proj = getPerspectiveProjectionMatrix();
+        glm::mat4 projView = proj * view;
+
+        totalTime += deltaTime_;
+        timerParticles_ += deltaTime_;
+        const float particlesSpawnInterval = 0.5f;
+
+        unsigned int particlesToAdd = timerParticles_ / particlesSpawnInterval;
+        timerParticles_ -= particlesToAdd * particlesSpawnInterval;
+
+        nParticles_ += particlesToAdd;
+        if (nParticles_ > MAX_PARTICLES_)
+            nParticles_ = MAX_PARTICLES_;
+
+		// TODO: maybe change model and have multiple emitter positions
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::vec4 initPos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		glm::vec4 initDir = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+        glm::vec3 emitterPos = glm::vec3(model * initPos);
+        glm::vec3 emitterDir = glm::normalize(glm::vec3(model * initDir));
+
+        particlesUpdateShader_.use();
+
+        particlesUpdateShader_.setUniforms(deltaTime_, totalTime, emitterPos, emitterDir);
+
+        particles_[0].setBindingIndex(0);
+        particles_[1].setBindingIndex(1);
+
+        glDispatchCompute(2, 1, 1);
+
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        skyShader_.use();
+        skyboxTexture_.use();
+
+        glDepthFunc(GL_LEQUAL);
+        glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view));
+        glm::mat4 mvp = proj * viewNoTranslation;
+        glUniformMatrix4fv(skyShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+        skybox_.draw();
+        glDepthFunc(GL_LESS);
+
+        celShadingShader_.use();
+		setMaterial(defaultMat);
+
+        drawCrystal(projView, view);
+        drawParticles(projView, view);
         
+		CHECK_GL_ERROR;
     }
     
-private:    
+private:
+    CelShading celShadingShader_;
+    Sky skyShader_;
+    ParticlesDraw particlesDrawShader_;
+    ParticlesUpdate particlesUpdateShader_;
+
+    Texture2D crystalTexture_;
+	Texture2D particleTexture_;
+    TextureCubeMap skyboxTexture_;
+
+    Model street_;
+    Model skybox_;
+	Model crystal_;
+
+    UniformBuffer material_;
+
     glm::vec3 cameraPosition_;
     glm::vec2 cameraOrientation_;
     
@@ -192,13 +456,23 @@ private:
     int currentScene_;
     
     bool isMouseMotionEnabled_;
+
+    GLuint vaoParticles_;
+
+    float totalTime;
+    float timerParticles_;
+
+    static const unsigned int MAX_PARTICLES_ = 64;
+    unsigned int nParticles_;
+
+    ShaderStorageBuffer particles_[2];
 };
 
 
 int main(int argc, char* argv[])
 {
 	WindowSettings settings = {};
-	settings.fps = 60;
+	settings.fps = 100;
 	settings.context.depthBits = 24;
 	settings.context.stencilBits = 8;
 	settings.context.antiAliasingLevel = 4;
