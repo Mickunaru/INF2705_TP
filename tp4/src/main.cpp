@@ -22,6 +22,7 @@
 #include "textures.hpp"
 #include "uniform_buffer.hpp"
 #include "shader_storage_buffer.hpp"
+#include "model_data.hpp"
 
 #define CHECK_GL_ERROR printGLError(__FILE__, __LINE__)
 
@@ -131,11 +132,15 @@ struct App : public OpenGLApplication
         crystalTexture_.setWrap(GL_CLAMP_TO_EDGE);
         crystalTexture_.setFiltering(GL_LINEAR);
 
-        // TODO: Change to shine particle sprite later on
-        particleTexture_.load("../textures/star_spritesheet.png");
+        particleTexture_.load("../textures/star-spritesheet.png");
         particleTexture_.setWrap(GL_REPEAT);
         particleTexture_.setFiltering(GL_LINEAR);
         particleTexture_.enableMipmap();
+
+        groundTexture_.load("../textures/moon-ground.png");
+        groundTexture_.setWrap(GL_REPEAT);
+        groundTexture_.setFiltering(GL_LINEAR);
+        groundTexture_.enableMipmap();
 
         const char* pathes[] = {
             "../textures/skybox/px.bmp",
@@ -158,7 +163,7 @@ struct App : public OpenGLApplication
             {0.2f, 0.2f, 0.2f, 0.0f},
             {1.0f, 1.0f, 1.0f, 0.0f},
             {0.5f, 0.5f, 0.5f, 0.0f},
-            {0.5f, -1.0f, 0.5f, 0.0f}
+            {0.5f, -0.75f, 0.5f, 0.0f}
         };
 
 		setLightingUniform();
@@ -206,7 +211,7 @@ struct App : public OpenGLApplication
     void initStaticModelMatrices()
     {
 		crystalModel_ = glm::mat4(1.0f);
-		crystalModel_ = glm::translate(crystalModel_, glm::vec3(0.0f, 0.0f, -2.0f));
+		crystalModel_ = glm::translate(crystalModel_, glm::vec3(0.0f, 1.0f, -2.0f));
     }
 
     void setLightingUniform()
@@ -339,15 +344,28 @@ struct App : public OpenGLApplication
     {
         skybox_.load("../models/skybox.ply");
 		crystal_.load("../models/crystal.ply");
+        ground_.load(groundVertices, sizeof(groundVertices), groundElements, sizeof(groundElements));
     }
 
     void drawCrystal(glm::mat4& projView, glm::mat4& view)
     {
         crystalTexture_.use();
 
-		//TODO: maybe have multiple crystals
-        glm::mat4 mvp = projView * crystalModel_;
-        celShadingShader_.setMatrices(mvp, view, crystalModel_);
+        float floatAmplitude = 0.05f;
+        float floatSpeed = 2.0f;
+        float yOffset = sin(totalTime * floatSpeed) * floatAmplitude;
+
+        float tiltAmplitude = glm::radians(3.0f);
+        float tiltSpeed = 1.5f;
+        float tiltX = sin(totalTime * tiltSpeed) * tiltAmplitude;
+        float tiltZ = cos(totalTime * tiltSpeed * 0.7f) * tiltAmplitude;
+
+        glm::mat4 floatingModel = glm::translate(crystalModel_, glm::vec3(0.0f, yOffset, 0.0f));
+        floatingModel = glm::rotate(floatingModel, tiltX, glm::vec3(1.0f, 0.0f, 0.0f));
+        floatingModel = glm::rotate(floatingModel, tiltZ, glm::vec3(0.0f, 0.0f, 1.0f));
+
+        glm::mat4 mvp = projView * floatingModel;
+        celShadingShader_.setMatrices(mvp, view, floatingModel);
         crystal_.draw();
     }
 
@@ -388,6 +406,16 @@ struct App : public OpenGLApplication
         std::swap(particles_[0], particles_[1]);
     }
 
+    void drawGround(glm::mat4& projView, glm::mat4& view)
+    {
+		groundTexture_.use();
+        glm::mat4 groundModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+        groundModel = glm::scale(groundModel, glm::vec3(MAP_LENGTH, 1.0f, MAP_WIDTH));
+        glm::mat4 groundMVP = projView * groundModel;
+        celShadingShader_.setMatrices(groundMVP, view, groundModel);
+        ground_.draw();
+    }
+
     glm::mat4 getViewMatrix()
     {
         glm::mat4 view = glm::mat4(1.0);
@@ -421,10 +449,46 @@ struct App : public OpenGLApplication
     {
         CHECK_GL_ERROR;
         ImGui::Begin("Scene Parameters");
+
 		// TODO: Add some cool parameters to tweak
+        ImGui::SliderFloat("Light Rotation (deg)", &lightRotationDeg, 0.0f, 360.0f);
+        ImGui::ColorEdit3("Light Color", (float*)&lightColor);
+
         ImGui::End();
 
         updateCameraInput();
+
+        bool hasLightRotationChanged = oldLightRotationDeg != lightRotationDeg;
+		bool hasLightColorChanged = oldLightColor.x != lightColor.x || oldLightColor.y != lightColor.y || oldLightColor.z != lightColor.z;
+		bool hasLightChanged = hasLightRotationChanged || hasLightColorChanged;
+
+        if (hasLightRotationChanged)
+        {
+            oldLightRotationDeg = lightRotationDeg;
+
+            float rotRad = glm::radians(lightRotationDeg);
+
+            glm::vec3 dir = glm::normalize(glm::vec3(
+                sin(rotRad),
+                -0.75,
+                cos(rotRad)
+            ));
+
+            lightsData_.dirLight.direction = glm::vec4(dir, 0.0f);
+		}
+
+        if (hasLightColorChanged)
+        {
+            lightsData_.dirLight.diffuse = glm::vec4(lightColor.x, lightColor.y, lightColor.z, 1.0f);
+        }
+
+        if (hasLightChanged)
+        {
+            setLightingUniform();
+
+            lights_.allocate(&lightsData_, sizeof(lightsData_));
+            lights_.setBindingIndex(1);
+		}
 
         glm::mat4 view = getViewMatrix();
         glm::mat4 proj = getPerspectiveProjectionMatrix();
@@ -454,6 +518,7 @@ struct App : public OpenGLApplication
         celShadingShader_.use();
 		setMaterial(defaultMat);
 
+		drawGround(projView, view);
         drawCrystal(projView, view);
         drawParticles(projView, view);
         
@@ -466,6 +531,7 @@ private:
     ParticlesDraw particlesDrawShader_;
     ParticlesUpdate particlesUpdateShader_;
 
+	Texture2D groundTexture_;
     Texture2D crystalTexture_;
 	Texture2D particleTexture_;
     TextureCubeMap skyboxTexture_;
@@ -473,6 +539,7 @@ private:
     Model street_;
     Model skybox_;
 	Model crystal_;
+	Model ground_;
 
     UniformBuffer material_;
     UniformBuffer lights_;
@@ -486,7 +553,7 @@ private:
 
     glm::vec3 cameraPosition_;
     glm::vec2 cameraOrientation_;
-    
+
     // Imgui var
     const char* const SCENE_NAMES[1] = {
         "Main Scene"
@@ -505,6 +572,16 @@ private:
     unsigned int nParticles_;
 
     ShaderStorageBuffer particles_[2];
+
+    const float MAP_LENGTH = 50.0f;
+    const float MAP_WIDTH = 50.0f;
+
+    // Params
+	float oldLightRotationDeg = 0.0f;
+    float lightRotationDeg = 0.0f;
+
+	ImVec4 oldLightColor = ImVec4(1, 1, 1, 1);
+    ImVec4 lightColor = ImVec4(1, 1, 1, 1);
 };
 
 
