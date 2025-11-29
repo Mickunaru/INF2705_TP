@@ -73,6 +73,8 @@ struct Particle
     glm::vec2 size;
     GLfloat timeToLive;
     GLfloat maxTimeToLive;
+    GLfloat frame;
+    glm::vec3 padding;
 };
 
 Material defaultMat =
@@ -130,7 +132,7 @@ struct App : public OpenGLApplication
         crystalTexture_.setFiltering(GL_LINEAR);
 
         // TODO: Change to shine particle sprite later on
-        particleTexture_.load("../textures/smoke.png");
+        particleTexture_.load("../textures/star_spritesheet.png");
         particleTexture_.setWrap(GL_REPEAT);
         particleTexture_.setFiltering(GL_LINEAR);
         particleTexture_.enableMipmap();
@@ -171,10 +173,17 @@ struct App : public OpenGLApplication
         particles_[0].setBindingIndex(0);
         particles_[1].setBindingIndex(1);
 
+		initParticlesBuffers();
+
+        CHECK_GL_ERROR;
+	}
+
+    void initParticlesBuffers()
+    {
         glGenVertexArrays(1, &vaoParticles_);
         glBindVertexArray(vaoParticles_);
 
-        particles_[0].bindAsArray();
+        particles_[1].bindAsArray();
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, position));
@@ -188,10 +197,11 @@ struct App : public OpenGLApplication
         glEnableVertexAttribArray(3);
         glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, size));
 
-        glBindVertexArray(0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, frame));
 
-        CHECK_GL_ERROR;
-	}
+        glBindVertexArray(0);
+    }
 
     void initStaticModelMatrices()
     {
@@ -343,6 +353,24 @@ struct App : public OpenGLApplication
 
     void drawParticles(glm::mat4& projView, glm::mat4& view)
     {
+        // TODO: maybe change model and have multiple emitter positions
+        glm::vec4 initPos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        glm::vec4 initDir = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+        glm::vec3 emitterPos = glm::vec3(crystalModel_ * initPos);
+        glm::vec3 emitterDir = glm::normalize(glm::vec3(crystalModel_ * initDir));
+
+        particlesUpdateShader_.use();
+
+        particlesUpdateShader_.setUniforms(deltaTime_, totalTime, emitterPos, emitterDir);
+
+        particles_[0].setBindingIndex(0);
+        particles_[1].setBindingIndex(1);
+
+        GLuint workGroups = (MAX_PARTICLES_ + 63) / 64;
+        glDispatchCompute(workGroups, 1, 1);
+
+        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+
         particlesDrawShader_.use();
         particleTexture_.use();
 
@@ -355,8 +383,8 @@ struct App : public OpenGLApplication
         glDepthMask(GL_FALSE);
 
         glBindVertexArray(vaoParticles_);
-        particles_[0].bindAsArray();
         glDrawArrays(GL_POINTS, 0, nParticles_);
+        glBindVertexArray(0);
 
         glDepthMask(GL_TRUE);
         glDisable(GL_BLEND);
@@ -416,23 +444,6 @@ struct App : public OpenGLApplication
         nParticles_ += particlesToAdd;
         if (nParticles_ > MAX_PARTICLES_)
             nParticles_ = MAX_PARTICLES_;
-
-		// TODO: maybe change model and have multiple emitter positions
-		glm::vec4 initPos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		glm::vec4 initDir = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-        glm::vec3 emitterPos = glm::vec3(crystalModel_ * initPos);
-        glm::vec3 emitterDir = glm::normalize(glm::vec3(crystalModel_ * initDir));
-
-        particlesUpdateShader_.use();
-
-        particlesUpdateShader_.setUniforms(deltaTime_, totalTime, emitterPos, emitterDir);
-
-        particles_[0].setBindingIndex(0);
-        particles_[1].setBindingIndex(1);
-
-        glDispatchCompute(2, 1, 1);
-
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         skyShader_.use();
         skyboxTexture_.use();

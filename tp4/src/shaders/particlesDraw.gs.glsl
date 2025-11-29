@@ -10,6 +10,7 @@ in ATTRIB_VS_OUT
     float zOrientation;
     vec4 color;
     float size;
+    float frame;
 } attribIn[];
 
 out ATTRIB_GS_OUT
@@ -20,6 +21,9 @@ out ATTRIB_GS_OUT
 
 uniform mat4 projection;
 uniform mat4 view;
+
+uniform int cols = 3;
+uniform int rows = 3;
 
 void main()
 {
@@ -37,12 +41,33 @@ void main()
         vec2( halfSize,  halfSize)
     );
 
+    int frameIndex = int(attribIn[0].frame);
+    float frameWidth = 1.0 / float(cols);
+    float frameHeight = 1.0 / float(rows);
+
+    int col = frameIndex % cols;
+    int row = frameIndex / cols;
+
+    float uMin = float(col) * frameWidth;
+    float vMin = 1.0 - float(row + 1) * frameHeight;
+    float uMax = uMin + frameWidth;
+    float vMax = vMin + frameHeight;
+
     vec2 uvs[4] = vec2[](
-        vec2(0.0, 0.0),
-        vec2(1.0, 0.0),
-        vec2(0.0, 1.0),
-        vec2(1.0, 1.0)
+        vec2(uMin, vMin),
+        vec2(uMax, vMin),
+        vec2(uMin, vMax),
+        vec2(uMax, vMax)
     );
+
+    /*
+    vec2 uvs[4] = vec2[](
+        vec2(0, 0),
+        vec2(1, 0),
+        vec2(0, 1),
+        vec2(1, 1)
+    );
+    */
 
     float c = cos(angle);
     float s = sin(angle);

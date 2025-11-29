@@ -11,14 +11,15 @@ struct Particle
     vec2 size;
     float timeToLive;
     float maxTimeToLive;
+    float frame;
 };
 
-layout(std140, binding = 0) readonly restrict buffer ParticlesInputBlock
+layout(std430, binding = 0) readonly restrict buffer ParticlesInputBlock
 {
     Particle particles[];
 } dataIn;
 
-layout(std140, binding = 1) writeonly restrict buffer ParticlesOutputBlock
+layout(std430, binding = 1) writeonly restrict buffer ParticlesOutputBlock
 {
     Particle particles[];
 } dataOut;
@@ -43,13 +44,14 @@ void main()
         float PI = 3.14159265;
         pOut.position = emitterPosition;
         pOut.zOrientation = rand01() * 2 * PI;
-        pOut.velocity = emitterDirection * 0.3 + vec3(0.0, 0.2, 0.0);
+        pOut.velocity = emitterDirection * 0.2 + vec3(0.0, 0.2, 0.0);
         pOut.color = vec4(0.5, 0.5, 0.5, 0.0);
         pOut.size = vec2(0.2, 0.2);
 
-        float life = 1.5 + rand01() * 0.5;
+        float life = 2.0 + rand01() * 1.0;
         pOut.timeToLive = life;
         pOut.maxTimeToLive = life;
+        pOut.frame = 0.0;
     }
     else
     {
@@ -65,14 +67,13 @@ void main()
         vec3 targetColor = vec3(1.0);
         vec3 finalColor = mix(baseColor, targetColor, t);
 
-        float alpha = 0.2;
-        if (t < 0.2)
-            alpha *= (t / 0.2);
-        else if (t > 0.8)
-            alpha *= ((1.0 - t) / 0.2);
+        float alpha = 1.0 - abs(2.0 * t - 1.0);
 
         pOut.color = vec4(finalColor, alpha);
         pOut.size = mix(vec2(0.2), vec2(0.5), t);
+        
+        float numFrames = 9.0;
+        pOut.frame = min(floor(t * float(numFrames)), numFrames - 1);
     }
 
     dataOut.particles[gl_GlobalInvocationID.x] = pOut;
