@@ -353,11 +353,8 @@ struct App : public OpenGLApplication
 
     void drawParticles(glm::mat4& projView, glm::mat4& view)
     {
-        // TODO: maybe change model and have multiple emitter positions
-        glm::vec4 initPos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-        glm::vec4 initDir = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-        glm::vec3 emitterPos = glm::vec3(crystalModel_ * initPos);
-        glm::vec3 emitterDir = glm::normalize(glm::vec3(crystalModel_ * initDir));
+        glm::vec3 emitterPos = glm::vec3(crystalModel_[3]);
+        glm::vec3 emitterDir = glm::normalize(glm::vec3(crystalModel_ * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
 
         particlesUpdateShader_.use();
 
@@ -374,7 +371,6 @@ struct App : public OpenGLApplication
         particlesDrawShader_.use();
         particleTexture_.use();
 
-		// TODO: maybe change model matrix or have multiple particle emitters
         glm::mat4 particleModelView = view * crystalModel_;
         particlesDrawShader_.setMatrices(particleModelView, projView, view);
 
@@ -505,7 +501,7 @@ private:
     float totalTime;
     float timerParticles_;
 
-    static const unsigned int MAX_PARTICLES_ = 64;
+    static const unsigned int MAX_PARTICLES_ = 32;
     unsigned int nParticles_;
 
     ShaderStorageBuffer particles_[2];
