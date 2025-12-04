@@ -65,3 +65,24 @@ protected:
     virtual void load() override;
     virtual void getAllUniformLocations() override;
 };
+
+class MountainShader : public ShaderProgram
+{
+public:
+    GLuint modelULoc;
+    GLuint viewULoc;
+    GLuint projectionULoc;
+    GLuint texture1ULoc;
+    GLuint viewPosULoc;
+
+    // Helper to send the 3 separate matrices required by mountain.vert
+    void setMatrices(glm::mat4& model, glm::mat4& view, glm::mat4& projection);
+
+    // Helper to send camera position required by mountain.frag
+    void setCameraPosition(glm::vec3& pos);
+
+protected:
+    virtual void load() override;
+    virtual void getAllUniformLocations() override;
+    virtual void assignAllUniformBlockIndexes() override;
+};

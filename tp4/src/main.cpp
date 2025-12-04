@@ -32,6 +32,7 @@ using namespace glm;
 struct Vertex {
     glm::vec3 position; 
     glm::vec3 normal;
+    glm::vec2 texCoords;
 };
 
 struct Material
@@ -306,11 +307,8 @@ struct App : public OpenGLApplication
         glGenVertexArrays(1, &vaoCurve);
         glGenBuffers(1, &vboCurve);
         glGenBuffers(1, &eboCurve);
-        CHECK_GL_ERROR;
 
 		initParticlesBuffers();
-
-        CHECK_GL_ERROR;
 	}
 
     void initParticlesBuffers()
@@ -348,7 +346,7 @@ struct App : public OpenGLApplication
         crystalModel_ = glm::translate(crystalModel_, crystalPosition);
         crystalModel_ = glm::scale(crystalModel_, glm::vec3(2.0f, 2.0f, 2.0f));
 
-		mountainModel_ = glm::mat4(1.0f);
+        mountainModel_ = glm::mat4(1.0f);
         mountainModel_ = glm::translate(mountainModel_, glm::vec3(10.0f, -0.2f, -25.0f));
         mountainModel_ = glm::scale(mountainModel_, glm::vec3(10.0f, 10.0f, 10.0f));
     }
@@ -523,6 +521,7 @@ struct App : public OpenGLApplication
 
     void drawMountain(glm::mat4& projView, glm::mat4& view)
     {
+        //mountainShader_.use();
 		mountainTexture_.use();
         
         glm::mat4 modelView = view * mountainModel_;
@@ -534,7 +533,7 @@ struct App : public OpenGLApplication
     void drawSign(glm::mat4& projView, glm::mat4& view)
     {
         
-        glm::mat4 signModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.1f, 0.0f));
+        glm::mat4 signModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.1f, -30.0f));
         float angleDegrees = 180.0f;
         signModel = glm::rotate(
             signModel,
@@ -603,6 +602,7 @@ struct App : public OpenGLApplication
 
     void drawTetherPath(glm::mat4& projView, glm::mat4& view)
     {
+        glBindVertexArray(0);
 
         glBindVertexArray(vaoCurve);
 
@@ -615,6 +615,12 @@ struct App : public OpenGLApplication
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoords));
+
         glm::mat4 curveModel = glm::mat4(1.0f);
         curveModel = glm::translate(curveModel, glm::vec3(15.0f, 0.0f, -25.0f));
 
@@ -623,7 +629,7 @@ struct App : public OpenGLApplication
         
         celShadingShader_.setMatrices(curveMVP, curveView, curveModel);
 
-        glDrawElements(GL_LINE_STRIP, (GLsizei)indicesCurve.size(), GL_UNSIGNED_INT, 0);
+        //glDrawElements(GL_LINE_STRIP, (GLsizei)indicesCurve.size(), GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
 

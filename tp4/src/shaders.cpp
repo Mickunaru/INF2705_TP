@@ -120,3 +120,42 @@ void ParticlesUpdate::setUniforms(float deltaTime, float totalTime, glm::vec3& e
     glUniform3fv(emitterPosLoc, 1, glm::value_ptr(emitterPos));
     glUniform3fv(emitterDirLoc, 1, glm::value_ptr(emitterDir));
 }
+
+void MountainShader::load()
+{
+    const char* VERTEX_SRC_PATH = "./shaders/mountain.vert";
+    const char* FRAGMENT_SRC_PATH = "./shaders/mountain.frag";
+
+    name_ = "MountainShader";
+    loadShaderSource(GL_VERTEX_SHADER, VERTEX_SRC_PATH);
+    loadShaderSource(GL_FRAGMENT_SHADER, FRAGMENT_SRC_PATH);
+    link();
+}
+
+void MountainShader::getAllUniformLocations()
+{
+    modelULoc = glGetUniformLocation(id_, "model");
+    viewULoc = glGetUniformLocation(id_, "view");
+    projectionULoc = glGetUniformLocation(id_, "projection");
+    texture1ULoc = glGetUniformLocation(id_, "texture1");
+    viewPosULoc = glGetUniformLocation(id_, "viewPos");
+}
+
+void MountainShader::assignAllUniformBlockIndexes()
+{
+    setUniformBlockBinding("MaterialBlock", 0);
+    setUniformBlockBinding("LightBlock", 1);
+}
+
+void MountainShader::setMatrices(glm::mat4& model, glm::mat4& view, glm::mat4& projection)
+{
+    glUniformMatrix4fv(modelULoc, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(viewULoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projectionULoc, 1, GL_FALSE, glm::value_ptr(projection));
+}
+
+void MountainShader::setCameraPosition(glm::vec3& pos)
+{
+    glUniform3fv(viewPosULoc, 1, glm::value_ptr(pos));
+}
+

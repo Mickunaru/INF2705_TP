@@ -178,6 +178,8 @@
   <ItemGroup>
     <None Include="CMakeLists.txt" />
     <None Include=".vscode\settings.json" />
+    <None Include="mountain.fg.glsl" />
+    <None Include="mountain.vs.glsl" />
     <None Include="README.md" />
     <None Include="shaders\particlesDraw.fs.glsl" />
     <None Include="shaders\particlesDraw.gs.glsl" />
