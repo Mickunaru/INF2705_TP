@@ -140,37 +140,54 @@ Material signMat =
     5.0f                      // Shininess
 };
 
+//groundModel_ = glm::mat4(1.0f);
+//groundModel_ = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
+//groundModel_ = glm::scale(groundModel_, glm::vec3(MAP_LENGTH, 1.0f, MAP_WIDTH));
+//
+//crystalModel_ = glm::mat4(1.0f);
+//crystalModel_ = glm::translate(crystalModel_, crystalPosition);
+//crystalModel_ = glm::scale(crystalModel_, glm::vec3(2.0f, 2.0f, 2.0f));
+//
+//mountainModel_ = glm::mat4(1.0f);
+//mountainModel_ = glm::translate(mountainModel_, glm::vec3(10.0f, -0.2f, -25.0f));
+//mountainModel_ = glm::scale(mountainModel_, glm::vec3(10.0f, 10.0f, 10.0f));
+
 BezierCurve curves[5] =
 {
+    // Segment 1: Start to First Turn
     {
-        glm::vec3(-28.7912, 1.4484, -1.7349),
-        glm::vec3(-28.0654, 1.4484, 6.1932),
-        glm::vec3(-10.3562, 8.8346, 6.5997),
-        glm::vec3(-7.6701, 8.8346, 8.9952)
+        glm::vec3(10.0f, 5.0f, -10.0f),   // Start Point (Above/Front of mountain)
+        glm::vec3(25.0f, 5.0f, -10.0f),   // Control Point 1
+        glm::vec3(30.0f, 8.0f, -25.0f),   // Control Point 2
+        glm::vec3(30.0f, 8.0f, -25.0f)    // End Point (Right side of mountain)
     },
+    // Segment 2: Right Side to Back
     {
-        glm::vec3(-7.6701, 8.8346, 8.9952),
-        glm::vec3(-3.9578, 8.8346, 12.3057),
-        glm::vec3(-2.5652, 2.4770, 13.6914),
-        glm::vec3(2.5079, 1.4484, 11.6581)
+        glm::vec3(30.0f, 8.0f, -25.0f),
+        glm::vec3(30.0f, 8.0f, -40.0f),
+        glm::vec3(20.0f, 4.0f, -45.0f),
+        glm::vec3(10.0f, 4.0f, -45.0f)    // Back of mountain
     },
+    // Segment 3: Back to Left Side
     {
-        glm::vec3(2.5079, 1.4484, 11.6581),
-        glm::vec3(7.5810, 0.4199, 9.6248),
-        glm::vec3(16.9333, 3.3014, 5.7702),
-        glm::vec3(28.4665, 6.6072, 3.9096)
+        glm::vec3(10.0f, 4.0f, -45.0f),
+        glm::vec3(0.0f, 4.0f, -45.0f),
+        glm::vec3(-10.0f, 6.0f, -40.0f),
+        glm::vec3(-10.0f, 6.0f, -25.0f)   // Left side of mountain
     },
+    // Segment 4: Left Side to Front
     {
-        glm::vec3(28.4665, 6.6072, 3.9096),
-        glm::vec3(39.9998, 9.9131, 2.0491),
-        glm::vec3(30.8239, 5.7052, -15.2108),
-        glm::vec3(21.3852, 5.7052, -9.0729)
+        glm::vec3(-10.0f, 6.0f, -25.0f),
+        glm::vec3(-10.0f, 6.0f, -15.0f),
+        glm::vec3(0.0f, 5.0f, -10.0f),
+        glm::vec3(10.0f, 5.0f, -10.0f)    // Connects back to start
     },
+    // Segment 5: Small Loop or Extension (Optional, keeps array size 5)
     {
-        glm::vec3(21.3852, 5.7052, -9.0729),
-        glm::vec3(11.9464, 5.7052, -2.9349),
-        glm::vec3(-1.0452, 1.4484, -12.4989),
-        glm::vec3(-12.2770, 1.4484, -13.2807)
+        glm::vec3(10.0f, 5.0f, -10.0f),
+        glm::vec3(15.0f, 8.0f, -5.0f),
+        glm::vec3(5.0f, 8.0f, -5.0f),
+        glm::vec3(10.0f, 5.0f, -10.0f)
     }
 };
 
@@ -332,7 +349,7 @@ struct App : public OpenGLApplication
         crystalModel_ = glm::scale(crystalModel_, glm::vec3(2.0f, 2.0f, 2.0f));
 
 		mountainModel_ = glm::mat4(1.0f);
-        mountainModel_ = glm::translate(mountainModel_, glm::vec3(0.0f, -0.2f, -15.0f));
+        mountainModel_ = glm::translate(mountainModel_, glm::vec3(10.0f, -0.2f, -25.0f));
         mountainModel_ = glm::scale(mountainModel_, glm::vec3(10.0f, 10.0f, 10.0f));
     }
 
@@ -514,42 +531,6 @@ struct App : public OpenGLApplication
         mountain_.draw();
     }
 
-    void drawTetherPath(glm::mat4& projView, glm::mat4& view)
-    {
-        tetherPathTexture_.use();
-        glm::mat4 tetherPathModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-        tetherPathModel = glm::scale(tetherPathModel, glm::vec3(10.0f, 10.0f, 10.0f));
-        float angleDegrees = 180.0f;
-        tetherPathModel = glm::rotate(
-            tetherPathModel,
-            glm::radians(angleDegrees),
-            glm::vec3(0.0f, 1.0f, 1.0f)
-        );
-        glm::mat4 modelView = view * tetherPathModel;
-        glm::mat4 tetherPathMVP = projView * tetherPathModel;
-        celShadingShader_.setMatrices(tetherPathMVP, modelView, tetherPathModel);
-        tetherPath_.draw();
-        glBindVertexArray(0);
-    }
-
-    void drawTethers(glm::mat4& projView, glm::mat4& view)
-    {
-        tetherTexture_.use();
-        glm::mat4 tetherModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-        tetherModel = glm::scale(tetherModel, glm::vec3(10.0f, 10.0f, 10.0f));
-        float angleDegrees = 180.0f;
-        tetherModel = glm::rotate(
-            tetherModel,
-            glm::radians(angleDegrees),
-            glm::vec3(0.0f, 1.0f, 1.0f)
-        );
-        glm::mat4 modelView = view * tetherModel;
-        glm::mat4 tethersMVP = projView * tetherModel;
-        celShadingShader_.setMatrices(tethersMVP, modelView, tetherModel);
-        tethers_.draw();
-        glBindVertexArray(0);
-    }
-
     void drawSign(glm::mat4& projView, glm::mat4& view)
     {
         
@@ -581,35 +562,104 @@ struct App : public OpenGLApplication
             {
                 float t = static_cast<float>(i) / static_cast<float>(nPoints + 1);
                 float u = 1.0f - t;
+
+                float tt = t * t;
+                float uu = u * u;
+                float uuu = uu * u;
+                float ttt = tt * t;
+
                 glm::vec3 position =
-                    u * u * u * curve.p0 +
-                    3 * t * u * u * curve.c0 +
-                    3 * t * t * u * curve.c1 +
-                    t * t * t * curve.p1;
+                    uuu * curve.p0 +      
+                    3.0f * uu * t * curve.c0 +
+                    3.0f * u * tt * curve.p1 + 
+                    ttt * curve.p1;
+
                 curveVertices.push_back({ position, glm::vec4(1.0f) });
                 indicesCurve.push_back(currentIndex++);
             }
         }
     }
 
-    void drawCurve(glm::mat4& projView, glm::mat4& view)
+    //void drawCurve(glm::mat4& projView, glm::mat4& view)
+    //{
+    //    glBindVertexArray(vaoCurve);
+
+    //    glBindBuffer(GL_ARRAY_BUFFER, vboCurve);
+    //    glBufferData(GL_ARRAY_BUFFER, curveVertices.size() * sizeof(Vertex), curveVertices.data(), GL_STATIC_DRAW);
+
+    //    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboCurve);
+    //    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesCurve.size() * sizeof(unsigned int), indicesCurve.data(), GL_STATIC_DRAW);
+
+    //    glEnableVertexAttribArray(0);
+    //    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+
+    //    glm::mat4 model = glm::mat4(1.0f);
+    //    glm::mat4 mvp = projView * model;
+    //    celShadingShader_.setMatrices(mvp, view, model);
+
+    //    glDrawElements(GL_LINE_STRIP, indicesCurve.size(), GL_UNSIGNED_INT, 0);
+    //    glBindVertexArray(0);
+    //}
+
+    void drawTetherPath(glm::mat4& projView, glm::mat4& view)
     {
+
         glBindVertexArray(vaoCurve);
 
         glBindBuffer(GL_ARRAY_BUFFER, vboCurve);
-        glBufferData(GL_ARRAY_BUFFER, curveVertices.size() * sizeof(Vertex), curveVertices.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, curveVertices.size() * sizeof(Vertex), curveVertices.data(), GL_DYNAMIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboCurve);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesCurve.size() * sizeof(unsigned int), indicesCurve.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesCurve.size() * sizeof(unsigned int), indicesCurve.data(), GL_DYNAMIC_DRAW);
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 
-        glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 mvp = projView * model;
-        celShadingShader_.setMatrices(mvp, view, model);
+        glm::mat4 curveModel = glm::mat4(1.0f);
+        curveModel = glm::translate(curveModel, glm::vec3(15.0f, 0.0f, -25.0f));
 
-        glDrawElements(GL_LINE_STRIP, indicesCurve.size(), GL_UNSIGNED_INT, 0);
+        glm::mat4 curveView = view * curveModel;
+        glm::mat4 curveMVP = projView * curveModel;
+        
+        celShadingShader_.setMatrices(curveMVP, curveView, curveModel);
+
+        glDrawElements(GL_LINE_STRIP, (GLsizei)indicesCurve.size(), GL_UNSIGNED_INT, 0);
+
+        glBindVertexArray(0);
+
+        glm::mat4 tetherPathModel = glm::mat4(1.0f);
+        tetherPathModel = glm::translate(tetherPathModel, glm::vec3(10.0f, 0.0f, -25.0f));
+        tetherPathModel = glm::scale(tetherPathModel, glm::vec3(10.0f, 10.0f, 10.0f));
+
+        float angleDegrees = 180.0f;
+        tetherPathModel = glm::rotate(
+            tetherPathModel,
+            glm::radians(angleDegrees),
+            glm::normalize(glm::vec3(0.0f, 1.0f, 1.0f))
+        );
+
+        glm::mat4 tetherPathMVP = projView * tetherPathModel;
+
+        celShadingShader_.setMatrices(tetherPathMVP, view, tetherPathModel);
+
+        tetherPath_.draw();
+    }
+
+    void drawTethers(glm::mat4& projView, glm::mat4& view)
+    {
+        //tetherTexture_.use();
+        glm::mat4 tetherModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.0f, -25.0f));
+        tetherModel = glm::scale(tetherModel, glm::vec3(10.0f, 10.0f, 10.0f));
+        float angleDegrees = 180.0f;
+        tetherModel = glm::rotate(
+            tetherModel,
+            glm::radians(angleDegrees),
+            glm::vec3(0.0f, 1.0f, 1.0f)
+        );
+        glm::mat4 modelView = view * tetherModel;
+        glm::mat4 tethersMVP = projView * tetherModel;
+        celShadingShader_.setMatrices(tethersMVP, modelView, tetherModel);
+        tethers_.draw();
         glBindVertexArray(0);
     }
 
@@ -802,19 +852,20 @@ struct App : public OpenGLApplication
         setMaterial(mountainMat);
         drawMountain(projView, view);
 
+        tetherPathTexture_.use();
         setMaterial(tetherPathMat);
         drawTetherPath(projView, view);
 
+        tetherTexture_.use();
         setMaterial(tetherMat);
         drawTethers(projView, view);
-        signTexture_.use();
 
-        setMaterial(signMat);
         signTexture_.use();
+        setMaterial(signMat);
         drawSign(projView, view);
 
-        setMaterial(bezierMat);
-        drawCurve(projView, view);
+        //setMaterial(bezierMat);
+        //drawCurve(projView, view);
 
         setMaterial(defaultMat);
 		drawGround(projView, view);
