@@ -31,9 +31,7 @@ using namespace glm;
 
 struct Vertex {
     glm::vec3 position; 
-    glm::vec3 normal;  
-    glm::vec4 color;  
-    glm::vec2 texCoords;
+    glm::vec3 normal;
 };
 
 struct Material
@@ -236,7 +234,6 @@ struct App : public OpenGLApplication
 
         loadModels();
         initStaticModelMatrices();
-        setupMountain();
 
         material_.allocate(&defaultMat, sizeof(Material));
         material_.setBindingIndex(0);
@@ -298,8 +295,17 @@ struct App : public OpenGLApplication
 
     void initStaticModelMatrices()
     {
+		groundModel_ = glm::mat4(1.0f);
+        groundModel_ = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
+        groundModel_ = glm::scale(groundModel_, glm::vec3(MAP_LENGTH, 1.0f, MAP_WIDTH));
+
 		crystalModel_ = glm::mat4(1.0f);
-		crystalModel_ = glm::translate(crystalModel_, glm::vec3(0.0f, 1.0f, -2.0f));
+        crystalModel_ = glm::translate(crystalModel_, crystalPosition);
+        crystalModel_ = glm::scale(crystalModel_, glm::vec3(2.0f, 2.0f, 2.0f));
+
+		mountainModel_ = glm::mat4(1.0f);
+        mountainModel_ = glm::translate(mountainModel_, glm::vec3(0.0f, -0.2f, -15.0f));
+        mountainModel_ = glm::scale(mountainModel_, glm::vec3(10.0f, 10.0f, 10.0f));
     }
 
     void setLightingUniform()
@@ -438,6 +444,15 @@ struct App : public OpenGLApplication
         ground_.load(groundVertices, sizeof(groundVertices), groundElements, sizeof(groundElements));
     }
 
+    void drawGround(glm::mat4& projView, glm::mat4& view)
+    {
+        groundTexture_.use();
+
+        glm::mat4 groundMVP = projView * groundModel_;
+        celShadingShader_.setMatrices(groundMVP, view, groundModel_);
+        ground_.draw();
+    }
+
     void drawCrystal(glm::mat4& projView, glm::mat4& view)
     {
         crystalTexture_.use();
@@ -451,7 +466,7 @@ struct App : public OpenGLApplication
         float tiltX = sin(totalTime * tiltSpeed) * tiltAmplitude;
         float tiltZ = cos(totalTime * tiltSpeed * 0.7f) * tiltAmplitude;
 
-        glm::mat4 floatingModel = glm::translate(crystalModel_, glm::vec3(0.0f, 35.0f, 0.0f)); // Changed y yOffset --> 35.0f
+        glm::mat4 floatingModel = glm::translate(crystalModel_, glm::vec3(0.0f, yOffset, 0.0f));
         floatingModel = glm::rotate(floatingModel, tiltX, glm::vec3(1.0f, 0.0f, 0.0f));
         floatingModel = glm::rotate(floatingModel, tiltZ, glm::vec3(0.0f, 0.0f, 1.0f));
 
@@ -460,59 +475,19 @@ struct App : public OpenGLApplication
         crystal_.draw();
     }
 
-    void setupMountain(){
-        glGenVertexArrays(1, &vaoMountain);
-        glGenBuffers(1, &vboMountain);
-        glGenBuffers(1, &eboMountain);
-
-        glBindVertexArray(vaoMountain);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vboMountain);
-        glBufferData(GL_ARRAY_BUFFER, mountainVertices.size() * sizeof(Vertex), mountainVertices.data(), GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboMountain);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesMountain.size() * sizeof(unsigned int), indicesMountain.data(), GL_STATIC_DRAW);
-
-        size_t stride = sizeof(Vertex);
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, position));
-
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, normal));
-
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, texCoords));
-
-        glEnableVertexAttribArray(3);
-        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, color));
-
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-
     void drawMountain(glm::mat4& projView, glm::mat4& view)
     {
-        glm::mat4 mountainModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.01f, 0.0f));
-        mountainModel = glm::scale(mountainModel, glm::vec3(10.0f, 10.0f, 10.0f));
-        float angleDegrees = 180.0f;
-        mountainModel = glm::rotate(
-            mountainModel,
-            glm::radians(angleDegrees),
-            glm::vec3(0.0f, 1.0f, 1.0f)
-        );
-        glm::mat4 modelView = view * mountainModel;
-        glm::mat4 mountainMVP = projView * mountainModel;
-        celShadingShader_.setMatrices(mountainMVP, modelView, mountainModel);
-        glBindVertexArray(vaoMountain);
-        glDrawElements(GL_TRIANGLES, indicesMountain.size(), GL_UNSIGNED_INT, 0);
+		mountainTexture_.use();
+        
+        glm::mat4 modelView = view * mountainModel_;
+        glm::mat4 mountainMVP = projView * mountainModel_;
+        celShadingShader_.setMatrices(mountainMVP, modelView, mountainModel_);
         mountain_.draw();
-        glBindVertexArray(0);   
     }
 
     void drawTetherPath(glm::mat4& projView, glm::mat4& view)
     {
+        tetherPathTexture_.use();
         glm::mat4 tetherPathModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
         tetherPathModel = glm::scale(tetherPathModel, glm::vec3(10.0f, 10.0f, 10.0f));
         float angleDegrees = 180.0f;
@@ -594,12 +569,11 @@ struct App : public OpenGLApplication
 
     void drawParticles(glm::mat4& projView, glm::mat4& view)
     {
-        glm::vec3 emitterPos = glm::vec3(crystalModel_[3]);
         glm::vec3 emitterDir = glm::normalize(glm::vec3(crystalModel_ * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
 
         particlesUpdateShader_.use();
 
-        particlesUpdateShader_.setUniforms(deltaTime_, totalTime, emitterPos, emitterDir);
+        particlesUpdateShader_.setUniforms(deltaTime_, totalTime, crystalPosition, emitterDir);
 
         particles_[0].setBindingIndex(0);
         particles_[1].setBindingIndex(1);
@@ -627,16 +601,6 @@ struct App : public OpenGLApplication
         glDisable(GL_BLEND);
 
         std::swap(particles_[0], particles_[1]);
-    }
-
-    void drawGround(glm::mat4& projView, glm::mat4& view)
-    {
-		groundTexture_.use();
-        glm::mat4 groundModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-        groundModel = glm::scale(groundModel, glm::vec3(MAP_LENGTH, 1.0f, MAP_WIDTH));
-        glm::mat4 groundMVP = projView * groundModel;
-        celShadingShader_.setMatrices(groundMVP, view, groundModel);
-        ground_.draw();
     }
 
     glm::mat4 getViewMatrix()
@@ -788,23 +752,17 @@ struct App : public OpenGLApplication
         glDepthFunc(GL_LESS);
 
         celShadingShader_.use();
-		setMaterial(defaultMat);
-		setMaterial(defaultMat);
 
-        celShadingShader_.use();
         setMaterial(mountainMat);
-        glActiveTexture(GL_TEXTURE0);
-        mountainTexture_.use();
         drawMountain(projView, view);
 
         setMaterial(tetherPathMat);
-        glActiveTexture(GL_TEXTURE0);
-        tetherPathTexture_.use();
         drawTetherPath(projView, view);
 
         setMaterial(bezierMat);
         drawCurve(projView, view);
 
+        setMaterial(defaultMat);
 		drawGround(projView, view);
         drawCrystal(projView, view);
         drawParticles(projView, view);
@@ -824,8 +782,8 @@ private:
 
 	Texture2D groundTexture_;
     Texture2D crystalTexture_;
-    Texture2D mountainTexture_; //Might not need as texture already on ply?
-    Texture2D tetherPathTexture_; //Might not need as texture already on ply?
+    Texture2D mountainTexture_;
+    Texture2D tetherPathTexture_;
 	Texture2D particleTexture_;
     TextureCubeMap skyboxTexture_;
 
@@ -841,6 +799,8 @@ private:
     UniformBuffer lights_;
 
     glm::mat4 crystalModel_;
+    glm::mat4 mountainModel_;
+	glm::mat4 groundModel_;
 
     struct {
         DirectionalLight dirLight;
@@ -863,10 +823,6 @@ private:
     float cameraAnimation = 0.f;
     bool isAnimatingCamera = false;
 
-    GLuint vaoMountain, vboMountain, eboMountain;
-    std::vector<Vertex> mountainVertices;
-    std::vector<unsigned int> indicesMountain;
-
     GLuint vaoCurve, vboCurve, eboCurve;
     std::vector<Vertex> curveVertices;
     std::vector<unsigned int> indicesCurve;
@@ -879,13 +835,14 @@ private:
     float totalTime;
     float timerParticles_;
 
+	vec3 crystalPosition = vec3(0.0f, 30.0f, -15.0f);
     static const unsigned int MAX_PARTICLES_ = 32;
     unsigned int nParticles_;
 
     ShaderStorageBuffer particles_[2];
 
-    const float MAP_LENGTH = 50.0f;
-    const float MAP_WIDTH = 50.0f;
+    const float MAP_LENGTH = 100.0f;
+    const float MAP_WIDTH = 100.0f;
 
     // Params
 	float oldLightRotationDeg = 0.0f;
