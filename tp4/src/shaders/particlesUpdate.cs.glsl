@@ -45,10 +45,10 @@ void main()
         float PI = 3.14159265;
 
         float angle = rand01(id) * 2.0 * PI;
-        float radius = 0.1 + rand01(id + 1u) * 0.05;
-        float height = rand01(id + 2u) * 0.4;
-        float horizontalJitter = (rand01(id + 3u) - 0.5) * 0.05; // small x/z jitter
-        float verticalOffset = (rand01(id + 4u) - 0.5) * 0.1;    // small up/down jitter
+        float radius = 0.2 + rand01(id + 1u) * 0.1;
+        float height = rand01(id + 2u) * 0.8;
+        float horizontalJitter = (rand01(id + 3u) - 0.5) * 0.05;
+        float verticalOffset = (rand01(id + 4u) - 0.5) * 0.1;
 
         vec3 offset = vec3(
             cos(angle) * radius + horizontalJitter,
@@ -60,7 +60,7 @@ void main()
         pOut.zOrientation = rand01(id + 5u) * 2 * PI;
 
         float speedFactor = 1.0 - height;
-        pOut.velocity = emitterDirection * (rand01(id + 6u) * 0.1 + 0.1) * speedFactor;
+        pOut.velocity = emitterDirection * (rand01(id + 6u) * 0.2 + 0.2) * speedFactor;
 
         pOut.color = vec4(0.5, 0.5, 0.5, 0.0);
         pOut.size = vec2(0.05, 0.05);
@@ -87,8 +87,8 @@ void main()
         float alpha = 1.0 - abs(2.0 * t - 1.0);
         pOut.color = vec4(finalColor, alpha);
 
-        vec2 minSize = vec2(0.05);
-        vec2 maxSize = vec2(0.2);
+        vec2 minSize = vec2(0.1);
+        vec2 maxSize = vec2(0.4);
         pOut.size = mix(minSize, maxSize, waveFactor);
         
         float numFrames = 9.0;
