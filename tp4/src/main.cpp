@@ -30,8 +30,10 @@ using namespace gl;
 using namespace glm;
 
 struct Vertex {
-    glm::vec3 position;
-    glm::vec4 color;
+    glm::vec3 position; 
+    glm::vec3 normal;  
+    glm::vec4 color;  
+    glm::vec2 texCoords;
 };
 
 struct Material
@@ -65,6 +67,14 @@ struct SpotLight
     GLfloat padding[3];
 };
 
+struct BezierCurve
+{
+    glm::vec3 p0;
+    glm::vec3 c0;
+    glm::vec3 c1;
+    glm::vec3 p1;
+};
+
 struct Particle
 {
     glm::vec3 position;
@@ -86,6 +96,68 @@ Material defaultMat =
     {0.7f, 0.7f, 0.7f},
     10.0f
 };
+
+Material bezierMat =
+{
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f},
+    0.0f
+};
+
+Material mountainMat =
+{
+    {0.0f, 0.0f, 0.0f, 1.0f}, // Emission: Off, Alpha 1
+    {0.7f, 0.7f, 0.7f, 1.0f}, // Ambient: Gray, Alpha 1
+    {1.0f, 1.0f, 1.0f, 1.0f}, // Diffuse: White, Alpha 1
+    {0.1f, 0.1f, 0.1f},       // Specular
+    5.0f                      // Shininess
+};
+
+Material tetherPathMat =
+{
+    {0.0f, 0.0f, 0.0f, 0.0f}, // Emission: Off
+    {0.5f, 0.5f, 0.5f, 0.0f}, // Ambient: Medium Gray (Neutral base visibility)
+    {0.8f, 0.8f, 0.8f, 0.0f}, // Diffuse: Off-White/Light Gray (Allows light color to pass)
+    {0.5f, 0.5f, 0.5f},       // Specular: Medium (A little shine, perhaps like reinforced fabric or metal)
+    30.0f                     // Shininess: Medium (More reflective than a mountain, less than polished metal)
+};
+
+BezierCurve curves[5] =
+{
+    {
+        glm::vec3(-28.7912, 1.4484, -1.7349),
+        glm::vec3(-28.0654, 1.4484, 6.1932),
+        glm::vec3(-10.3562, 8.8346, 6.5997),
+        glm::vec3(-7.6701, 8.8346, 8.9952)
+    },
+    {
+        glm::vec3(-7.6701, 8.8346, 8.9952),
+        glm::vec3(-3.9578, 8.8346, 12.3057),
+        glm::vec3(-2.5652, 2.4770, 13.6914),
+        glm::vec3(2.5079, 1.4484, 11.6581)
+    },
+    {
+        glm::vec3(2.5079, 1.4484, 11.6581),
+        glm::vec3(7.5810, 0.4199, 9.6248),
+        glm::vec3(16.9333, 3.3014, 5.7702),
+        glm::vec3(28.4665, 6.6072, 3.9096)
+    },
+    {
+        glm::vec3(28.4665, 6.6072, 3.9096),
+        glm::vec3(39.9998, 9.9131, 2.0491),
+        glm::vec3(30.8239, 5.7052, -15.2108),
+        glm::vec3(21.3852, 5.7052, -9.0729)
+    },
+    {
+        glm::vec3(21.3852, 5.7052, -9.0729),
+        glm::vec3(11.9464, 5.7052, -2.9349),
+        glm::vec3(-1.0452, 1.4484, -12.4989),
+        glm::vec3(-12.2770, 1.4484, -13.2807)
+    }
+};
+
 
 struct App : public OpenGLApplication
 {
@@ -137,6 +209,16 @@ struct App : public OpenGLApplication
         particleTexture_.setFiltering(GL_LINEAR);
         particleTexture_.enableMipmap();
 
+        mountainTexture_.load("../textures/mountain.png");
+        mountainTexture_.setWrap(GL_REPEAT);
+        mountainTexture_.setFiltering(GL_LINEAR);
+        mountainTexture_.enableMipmap();
+
+        //tetherPathTexture_.load("../textures/tetherpath.png");
+        //tetherPathTexture_.setWrap(GL_REPEAT);
+        //tetherPathTexture_.setFiltering(GL_LINEAR);
+        //tetherPathTexture_.enableMipmap();
+
         groundTexture_.load("../textures/moon-ground.png");
         groundTexture_.setWrap(GL_REPEAT);
         groundTexture_.setFiltering(GL_LINEAR);
@@ -154,6 +236,7 @@ struct App : public OpenGLApplication
 
         loadModels();
         initStaticModelMatrices();
+        setupMountain();
 
         material_.allocate(&defaultMat, sizeof(Material));
         material_.setBindingIndex(0);
@@ -177,6 +260,11 @@ struct App : public OpenGLApplication
 
         particles_[0].setBindingIndex(0);
         particles_[1].setBindingIndex(1);
+
+        glGenVertexArrays(1, &vaoCurve);
+        glGenBuffers(1, &vboCurve);
+        glGenBuffers(1, &eboCurve);
+        CHECK_GL_ERROR;
 
 		initParticlesBuffers();
 
@@ -344,6 +432,9 @@ struct App : public OpenGLApplication
     {
         skybox_.load("../models/skybox.ply");
 		crystal_.load("../models/crystal.ply");
+        mountain_.load("../models/mountain.ply");
+        //tetherPath_.load("../models/path.ply");
+        //sign_.load("../models/sign.ply");
         ground_.load(groundVertices, sizeof(groundVertices), groundElements, sizeof(groundElements));
     }
 
@@ -360,13 +451,151 @@ struct App : public OpenGLApplication
         float tiltX = sin(totalTime * tiltSpeed) * tiltAmplitude;
         float tiltZ = cos(totalTime * tiltSpeed * 0.7f) * tiltAmplitude;
 
-        glm::mat4 floatingModel = glm::translate(crystalModel_, glm::vec3(0.0f, yOffset, 0.0f));
+        glm::mat4 floatingModel = glm::translate(crystalModel_, glm::vec3(0.0f, 35.0f, 0.0f)); // Changed y yOffset --> 35.0f
         floatingModel = glm::rotate(floatingModel, tiltX, glm::vec3(1.0f, 0.0f, 0.0f));
         floatingModel = glm::rotate(floatingModel, tiltZ, glm::vec3(0.0f, 0.0f, 1.0f));
 
         glm::mat4 mvp = projView * floatingModel;
         celShadingShader_.setMatrices(mvp, view, floatingModel);
         crystal_.draw();
+    }
+
+    void setupMountain(){
+        glGenVertexArrays(1, &vaoMountain);
+        glGenBuffers(1, &vboMountain);
+        glGenBuffers(1, &eboMountain);
+
+        glBindVertexArray(vaoMountain);
+
+        glBindBuffer(GL_ARRAY_BUFFER, vboMountain);
+        glBufferData(GL_ARRAY_BUFFER, mountainVertices.size() * sizeof(Vertex), mountainVertices.data(), GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboMountain);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesMountain.size() * sizeof(unsigned int), indicesMountain.data(), GL_STATIC_DRAW);
+
+        size_t stride = sizeof(Vertex);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, position));
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, normal));
+
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, texCoords));
+
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, color));
+
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
+    void drawMountain(glm::mat4& projView, glm::mat4& view)
+    {
+        glm::mat4 mountainModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.01f, 0.0f));
+        mountainModel = glm::scale(mountainModel, glm::vec3(10.0f, 10.0f, 10.0f));
+        float angleDegrees = 180.0f;
+        mountainModel = glm::rotate(
+            mountainModel,
+            glm::radians(angleDegrees),
+            glm::vec3(0.0f, 1.0f, 1.0f)
+        );
+        glm::mat4 modelView = view * mountainModel;
+        glm::mat4 mountainMVP = projView * mountainModel;
+        celShadingShader_.setMatrices(mountainMVP, modelView, mountainModel);
+        glBindVertexArray(vaoMountain);
+        glDrawElements(GL_TRIANGLES, indicesMountain.size(), GL_UNSIGNED_INT, 0);
+        mountain_.draw();
+        glBindVertexArray(0);   
+    }
+
+    void drawTetherPath(glm::mat4& projView, glm::mat4& view)
+    {
+        //tetherPathTexture_.use();
+        celShadingShader_.use();
+        setMaterial(tetherPathMat);
+        glActiveTexture(GL_TEXTURE0);
+        tetherPathTexture_.use();
+        CHECK_GL_ERROR;
+        glm::mat4 tetherPathModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+        tetherPathModel = glm::scale(tetherPathModel, glm::vec3(10.0f, 10.0f, 10.0f));
+        float angleDegrees = 180.0f;
+        tetherPathModel = glm::rotate(
+            tetherPathModel,
+            glm::radians(angleDegrees),
+            glm::vec3(0.0f, 1.0f, 1.0f)
+        );
+        glm::mat4 modelView = view * tetherPathModel;
+        glm::mat4 tetherPathMVP = projView * tetherPathModel;
+        celShadingShader_.setMatrices(tetherPathMVP, modelView, tetherPathModel);
+        tetherPath_.draw();
+        glBindVertexArray(0);
+    }
+
+    void drawSign(glm::mat4& projView, glm::mat4& view)
+    {
+        //tetherPathTexture_.use();
+        celShadingShader_.use();
+        glm::mat4 signModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.1f, 0.0f));
+        float angleDegrees = 180.0f;
+        signModel = glm::rotate(
+            signModel,
+            glm::radians(angleDegrees),
+            glm::vec3(0.0f, 1.0f, 1.0f)
+        );
+        glm::mat4 modelView = view * signModel;
+        glm::mat4 signMVP = projView * signModel;
+        celShadingShader_.setMatrices(signMVP, modelView, signModel);
+        sign_.draw();
+    }
+
+    void calculateCurveVertices(unsigned int nPoints)
+    {
+        curveVertices.clear();
+        indicesCurve.clear();
+
+        unsigned int currentIndex = 0;
+
+        for (unsigned int j = 0; j < 5; ++j)
+        {
+            BezierCurve curve = curves[j];
+            unsigned int start = (j == 0) ? 0 : 1;
+            for (unsigned int i = start; i <= nPoints + 1; ++i)
+            {
+                float t = static_cast<float>(i) / static_cast<float>(nPoints + 1);
+                float u = 1.0f - t;
+                glm::vec3 position =
+                    u * u * u * curve.p0 +
+                    3 * t * u * u * curve.c0 +
+                    3 * t * t * u * curve.c1 +
+                    t * t * t * curve.p1;
+                curveVertices.push_back({ position, glm::vec4(1.0f) });
+                indicesCurve.push_back(currentIndex++);
+            }
+        }
+    }
+
+    void drawCurve(glm::mat4& projView, glm::mat4& view)
+    {
+        glBindVertexArray(vaoCurve);
+
+        glBindBuffer(GL_ARRAY_BUFFER, vboCurve);
+        glBufferData(GL_ARRAY_BUFFER, curveVertices.size() * sizeof(Vertex), curveVertices.data(), GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboCurve);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesCurve.size() * sizeof(unsigned int), indicesCurve.data(), GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 mvp = projView * model;
+        celShadingShader_.setMatrices(mvp, view, model);
+
+        glDrawElements(GL_LINE_STRIP, indicesCurve.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
     }
 
     void drawParticles(glm::mat4& projView, glm::mat4& view)
@@ -451,10 +680,59 @@ struct App : public OpenGLApplication
         ImGui::Begin("Scene Parameters");
 
 		// TODO: Add some cool parameters to tweak
+        ImGui::SliderInt("Bezier Number Of Points", (int*)&bezierNPoints, 0, 16);
+        if (ImGui::Button("Animate Camera"))
+        {
+            isAnimatingCamera = true;
+            cameraMode = 1;
+        }
         ImGui::SliderFloat("Light Rotation (deg)", &lightRotationDeg, 0.0f, 360.0f);
         ImGui::ColorEdit3("Light Color", (float*)&lightColor);
 
         ImGui::End();
+
+        if (isAnimatingCamera)
+        {
+            if (cameraAnimation < 5)
+            {
+                cameraAnimation += deltaTime_ / 3.0;
+
+                float progress = cameraAnimation / 5.0f;
+                unsigned int totalNPoints = (bezierNPoints + 1) * 5;
+                float tGlobal = progress * (totalNPoints - 1);
+                unsigned int idx = static_cast<unsigned int>(tGlobal);
+                idx = std::min(idx, totalNPoints - 2);
+                float t = tGlobal - idx;
+
+                glm::vec3 start = curveVertices[idx].position;
+                glm::vec3 end = curveVertices[idx + 1].position;
+
+                cameraPosition_ = glm::mix(start, end, t);
+
+                glm::vec3 diff = cameraPosition_;
+                cameraOrientation_.y = atan2(diff.x, diff.z);
+                cameraOrientation_.x = atan2(-diff.y, glm::length(glm::vec2(diff.x, diff.z)));
+            }
+            else
+            {
+                glm::vec3 diff = -cameraPosition_;
+                cameraOrientation_.y = M_PI + atan2(diff.z, diff.x);
+
+                cameraAnimation = 0.f;
+                isAnimatingCamera = false;
+                cameraMode = 0;
+            }
+        }
+        else {
+            updateCameraInput();
+        }
+
+        bool hasNumberOfSidesChanged = bezierNPoints != oldBezierNPoints;
+        if (hasNumberOfSidesChanged)
+        {
+            oldBezierNPoints = bezierNPoints;
+            calculateCurveVertices(bezierNPoints);
+        }
 
         updateCameraInput();
 
@@ -517,11 +795,25 @@ struct App : public OpenGLApplication
 
         celShadingShader_.use();
 		setMaterial(defaultMat);
+		setMaterial(defaultMat);
+
+        celShadingShader_.use();
+        setMaterial(mountainMat);
+        glActiveTexture(GL_TEXTURE0);
+        mountainTexture_.use();
+        drawMountain(projView, view);
+
+        setMaterial(bezierMat);
+        drawCurve(projView, view);
 
 		drawGround(projView, view);
         drawCrystal(projView, view);
         drawParticles(projView, view);
+
         
+        //drawTetherPath(projView, view);
+        //drawSign(projView, view);
+      
 		CHECK_GL_ERROR;
     }
     
@@ -533,12 +825,17 @@ private:
 
 	Texture2D groundTexture_;
     Texture2D crystalTexture_;
+    Texture2D mountainTexture_; //Might not need as texture already on ply?
+    Texture2D tetherPathTexture_; //Might not need as texture already on ply?
 	Texture2D particleTexture_;
     TextureCubeMap skyboxTexture_;
 
     Model street_;
     Model skybox_;
 	Model crystal_;
+	Model mountain_;
+    Model tetherPath_;
+    Model sign_;
 	Model ground_;
 
     UniformBuffer material_;
@@ -562,6 +859,21 @@ private:
     int currentScene_;
     
     bool isMouseMotionEnabled_;
+
+    int cameraMode = 0;
+    float cameraAnimation = 0.f;
+    bool isAnimatingCamera = false;
+
+    GLuint vaoMountain, vboMountain, eboMountain;
+    std::vector<Vertex> mountainVertices;
+    std::vector<unsigned int> indicesMountain;
+
+    GLuint vaoCurve, vboCurve, eboCurve;
+    std::vector<Vertex> curveVertices;
+    std::vector<unsigned int> indicesCurve;
+
+    unsigned int bezierNPoints = 3;
+    unsigned int oldBezierNPoints = 0;
 
     GLuint vaoParticles_;
 
