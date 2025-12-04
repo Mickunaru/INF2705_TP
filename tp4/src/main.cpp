@@ -214,10 +214,10 @@ struct App : public OpenGLApplication
         mountainTexture_.setFiltering(GL_LINEAR);
         mountainTexture_.enableMipmap();
 
-        //tetherPathTexture_.load("../textures/tetherpath.png");
-        //tetherPathTexture_.setWrap(GL_REPEAT);
-        //tetherPathTexture_.setFiltering(GL_LINEAR);
-        //tetherPathTexture_.enableMipmap();
+        tetherPathTexture_.load("../textures/tetherpath.png");
+        tetherPathTexture_.setWrap(GL_REPEAT);
+        tetherPathTexture_.setFiltering(GL_LINEAR);
+        tetherPathTexture_.enableMipmap();
 
         groundTexture_.load("../textures/moon-ground.png");
         groundTexture_.setWrap(GL_REPEAT);
@@ -433,7 +433,7 @@ struct App : public OpenGLApplication
         skybox_.load("../models/skybox.ply");
 		crystal_.load("../models/crystal.ply");
         mountain_.load("../models/mountain.ply");
-        //tetherPath_.load("../models/path.ply");
+        tetherPath_.load("../models/path.ply");
         //sign_.load("../models/sign.ply");
         ground_.load(groundVertices, sizeof(groundVertices), groundElements, sizeof(groundElements));
     }
@@ -513,12 +513,6 @@ struct App : public OpenGLApplication
 
     void drawTetherPath(glm::mat4& projView, glm::mat4& view)
     {
-        //tetherPathTexture_.use();
-        celShadingShader_.use();
-        setMaterial(tetherPathMat);
-        glActiveTexture(GL_TEXTURE0);
-        tetherPathTexture_.use();
-        CHECK_GL_ERROR;
         glm::mat4 tetherPathModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
         tetherPathModel = glm::scale(tetherPathModel, glm::vec3(10.0f, 10.0f, 10.0f));
         float angleDegrees = 180.0f;
@@ -803,6 +797,11 @@ struct App : public OpenGLApplication
         mountainTexture_.use();
         drawMountain(projView, view);
 
+        setMaterial(tetherPathMat);
+        glActiveTexture(GL_TEXTURE0);
+        tetherPathTexture_.use();
+        drawTetherPath(projView, view);
+
         setMaterial(bezierMat);
         drawCurve(projView, view);
 
@@ -811,7 +810,7 @@ struct App : public OpenGLApplication
         drawParticles(projView, view);
 
         
-        //drawTetherPath(projView, view);
+        
         //drawSign(projView, view);
       
 		CHECK_GL_ERROR;
