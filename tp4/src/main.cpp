@@ -234,7 +234,8 @@ struct App : public OpenGLApplication
         particlesDrawShader_.create();
         particlesUpdateShader_.create();
 
-		crystalTexture_.load("../textures/crystal-uv-unwrap.png");
+		//crystalTexture_.load("../textures/crystal-uv-unwrap.png");
+        crystalTexture_.load("../textures/crystal-diamond.png");
         crystalTexture_.setWrap(GL_CLAMP_TO_EDGE);
         crystalTexture_.setFiltering(GL_LINEAR);
 
