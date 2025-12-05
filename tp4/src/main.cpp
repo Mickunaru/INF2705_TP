@@ -263,6 +263,11 @@ struct App : public OpenGLApplication
         signTexture_.setFiltering(GL_LINEAR);
         signTexture_.enableMipmap();
 
+        signTextTexture_.load("../textures/signbg.png");
+        signTextTexture_.setWrap(GL_REPEAT);
+        signTextTexture_.setFiltering(GL_LINEAR);
+        signTextTexture_.enableMipmap();
+
         groundTexture_.load("../textures/moon-ground.png");
         groundTexture_.setWrap(GL_REPEAT);
         groundTexture_.setFiltering(GL_LINEAR);
@@ -485,6 +490,7 @@ struct App : public OpenGLApplication
         tetherPath_.load("../models/path.ply");
         tethers_.load("../models/tethers.ply");
         sign_.load("../models/sign.ply");
+        signText_.load("../models/sign_text.ply");
         ground_.load(groundVertices, sizeof(groundVertices), groundElements, sizeof(groundElements));
     }
 
@@ -532,18 +538,40 @@ struct App : public OpenGLApplication
 
     void drawSign(glm::mat4& projView, glm::mat4& view)
     {
-        
-        glm::mat4 signModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.1f, -30.0f));
-        float angleDegrees = 180.0f;
-        signModel = glm::rotate(
-            signModel,
-            glm::radians(angleDegrees),
-            glm::vec3(0.0f, 1.0f, 1.0f)
-        );
+        signTexture_.use();
+
+        glm::mat4 signModel = glm::mat4(1.0f);
+        signModel = glm::translate(signModel, glm::vec3(7.0f, 2.0f, -25.0f));
+        signModel = glm::scale(signModel, glm::vec3(10.0f, 10.0f, 10.0f));
+        //float angleDegrees = 180.0f;
+        //signModel = glm::rotate(
+        //    signModel,
+        //    glm::radians(angleDegrees),
+        //    glm::vec3(0.0f, 1.0f, 1.5f)
+        //);
         glm::mat4 modelView = view * signModel;
         glm::mat4 signMVP = projView * signModel;
         celShadingShader_.setMatrices(signMVP, modelView, signModel);
         sign_.draw();
+    }
+
+    void drawSignText(glm::mat4& projView, glm::mat4& view)
+    {
+        signTextTexture_.use();
+
+        glm::mat4 signTextModel = glm::mat4(1.0f);
+        signTextModel = glm::translate(signTextModel, glm::vec3(7.0f, 2.0f, -25.07f));
+        signTextModel = glm::scale(signTextModel, glm::vec3(10.0f, 10.0f, 10.0f));
+        //float angleDegrees = 180.0f;
+        //signModel = glm::rotate(
+        //    signModel,
+        //    glm::radians(angleDegrees),
+        //    glm::vec3(0.0f, 1.0f, 1.5f)
+        //);
+        glm::mat4 modelView = view * signTextModel;
+        glm::mat4 signTextMVP = projView * signTextModel;
+        celShadingShader_.setMatrices(signTextMVP, modelView, signTextModel);
+        signText_.draw();
     }
 
     void calculateCurveVertices(unsigned int nPoints)
@@ -866,7 +894,11 @@ struct App : public OpenGLApplication
         setMaterial(tetherMat);
         drawTethers(projView, view);
 
-        signTexture_.use();
+        celShadingShader_.use();
+        setMaterial(signMat);
+        drawSignText(projView, view);
+
+        celShadingShader_.use();
         setMaterial(signMat);
         drawSign(projView, view);
 
@@ -893,6 +925,7 @@ private:
     Texture2D tetherPathTexture_;
     Texture2D tetherTexture_;
     Texture2D signTexture_;
+    Texture2D signTextTexture_;
 	Texture2D particleTexture_;
     TextureCubeMap skyboxTexture_;
 
@@ -903,6 +936,7 @@ private:
     Model tetherPath_;
     Model tethers_;
     Model sign_;
+    Model signText_;
 	Model ground_;
 
     UniformBuffer material_;
