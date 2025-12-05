@@ -348,29 +348,16 @@ struct App : public OpenGLApplication
         signModel_ = glm::translate(signModel_, glm::vec3(7.0f, 2.0f, -25.0f));
         signModel_ = glm::scale(signModel_, glm::vec3(10.0f, 10.0f, 10.0f));
 
+        signTexModel_ = glm::mat4(1.0f);
+        signTexModel_ = glm::translate(signTexModel_, glm::vec3(7.0f, 2.0f, -25.0f));
+        signTexModel_ = glm::scale(signTexModel_, glm::vec3(10.0f, 10.0f, 10.0f));
+
         tetherPathModel_ = glm::mat4(1.0f);
         tetherPathModel_ = glm::translate(tetherPathModel_, glm::vec3(10.0f, 0.0f, -25.0f));
         tetherPathModel_ = glm::scale(tetherPathModel_, glm::vec3(10.0f, 10.0f, 10.0f));
 
-        // TODO: REMOVE
-        float angleDegrees = 180.0f;
-        tetherPathModel_ = glm::rotate(
-            tetherPathModel_,
-            glm::radians(angleDegrees),
-            glm::normalize(glm::vec3(0.0f, 1.0f, 1.0f))
-        );
-		// END TODO
-
         tetherModel_ = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.0f, -25.0f));
         tetherModel_ = glm::scale(tetherModel_, glm::vec3(10.0f, 10.0f, 10.0f));
-
-        // TODO: REMOVE
-        tetherModel_ = glm::rotate(
-            tetherModel_,
-            glm::radians(angleDegrees),
-            glm::vec3(0.0f, 1.0f, 1.0f)
-        );
-        // END TODO
     }
 
     void setLightingUniform()
@@ -556,6 +543,7 @@ struct App : public OpenGLApplication
     {
         signTexture_.use();
 
+        glm::mat4 signModel = glm::mat4(1.0f);
         glm::mat4 modelView = view * signModel_;
         glm::mat4 signMVP = projView * signModel_;
         celShadingShader_.setMatrices(signMVP, modelView, signModel_);
@@ -566,18 +554,10 @@ struct App : public OpenGLApplication
     {
         signTextTexture_.use();
 
-        glm::mat4 signTextModel = glm::mat4(1.0f);
-        signTextModel = glm::translate(signTextModel, glm::vec3(7.0f, 2.0f, -25.07f));
-        signTextModel = glm::scale(signTextModel, glm::vec3(10.0f, 10.0f, 10.0f));
-        //float angleDegrees = 180.0f;
-        //signModel = glm::rotate(
-        //    signModel,
-        //    glm::radians(angleDegrees),
-        //    glm::vec3(0.0f, 1.0f, 1.5f)
-        //);
-        glm::mat4 modelView = view * signTextModel;
-        glm::mat4 signTextMVP = projView * signTextModel;
-        celShadingShader_.setMatrices(signTextMVP, modelView, signTextModel);
+        glm::mat4 signModel = glm::mat4(1.0f);
+        glm::mat4 modelView = view * signTexModel_;
+        glm::mat4 signTexMVP = projView * signTexModel_;
+        celShadingShader_.setMatrices(modelView, modelView, signTexModel_);
         signText_.draw();
     }
 
@@ -921,6 +901,7 @@ private:
     glm::mat4 mountainModel_;
 	glm::mat4 groundModel_;
 	glm::mat4 signModel_;
+	glm::mat4 signTexModel_;
 	glm::mat4 tetherPathModel_;
     glm::mat4 tetherModel_;
 
