@@ -58,6 +58,11 @@ Un simple quad est utilisé pour le sol. Nous avons utilisé un texture de sol d
 
 Une animation de caméra sur une spline est utilisé pour apporter l'utilisateur vers une surprise.
 
+### 6. Modèles et textures personalisés
+
+Pour avoir quelque chose de plus spécial, nous avons conçu nos propres modèles de tout sauf le crystal.
+Nous avons aussi fait nos propres textures pour ces modèles là.
+
 ---
 
 ## Librairies utilisées
@@ -87,9 +92,9 @@ Pour charger les textures (sol, cristal, sprites de particules, etc).
 
 Via l'interface ImGui:
 
+-   Animate Camera: Déplace la caméra vers une surprise
 -   Light Rotation (deg): Fait tourner la lumière directionnelle autour de la scène
 -   Light Color: Change la couleur diffuse de la lumière directionnelle
--   À AJOUTER
 
 ---
 
@@ -99,11 +104,11 @@ Via l'interface ImGui:
 -   Texture du sol: https://www.reddit.com/r/Unity3D/comments/6sdq7s/i_just_made_a_seamless_lunar_surface_texture_you/
 -   Skybox: https://svs.gsfc.nasa.gov/4851
 -   Spritesheet de particules: https://kenney.nl/assets/particle-pack
--   Autres modèles: NOUS-MÊME
+-   Autres modèles et textures: NOUS-MÊME
 
 ---
 
 ## Auteurs
 
 -   2221795, Michael Le
--   , Arani Balasingam
+-   2296719, Arani Balasingam
