@@ -98,12 +98,6 @@
     <None Include="shaders\sky.vs.glsl">
       <Filter>Shader Source Files</Filter>
     </None>
-    <None Include="mountain.vs.glsl">
-      <Filter>Shader Source Files</Filter>
-    </None>
-    <None Include="mountain.fg.glsl">
-      <Filter>Shader Source Files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\inf2705\OpenGLApplication.hpp">

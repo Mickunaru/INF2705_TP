@@ -141,18 +141,6 @@ Material signMat =
     5.0f                      // Shininess
 };
 
-//groundModel_ = glm::mat4(1.0f);
-//groundModel_ = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
-//groundModel_ = glm::scale(groundModel_, glm::vec3(MAP_LENGTH, 1.0f, MAP_WIDTH));
-//
-//crystalModel_ = glm::mat4(1.0f);
-//crystalModel_ = glm::translate(crystalModel_, crystalPosition);
-//crystalModel_ = glm::scale(crystalModel_, glm::vec3(2.0f, 2.0f, 2.0f));
-//
-//mountainModel_ = glm::mat4(1.0f);
-//mountainModel_ = glm::translate(mountainModel_, glm::vec3(10.0f, -0.2f, -25.0f));
-//mountainModel_ = glm::scale(mountainModel_, glm::vec3(10.0f, 10.0f, 10.0f));
-
 BezierCurve curves[5] =
 {
     // Segment 1: Start to First Turn
@@ -234,7 +222,6 @@ struct App : public OpenGLApplication
         particlesDrawShader_.create();
         particlesUpdateShader_.create();
 
-		//crystalTexture_.load("../textures/crystal-uv-unwrap.png");
         crystalTexture_.load("../textures/crystal-diamond.png");
         crystalTexture_.setWrap(GL_CLAMP_TO_EDGE);
         crystalTexture_.setFiltering(GL_LINEAR);
@@ -286,6 +273,7 @@ struct App : public OpenGLApplication
 
         loadModels();
         initStaticModelMatrices();
+        calculateCurveVertices(bezierNPoints);
 
         material_.allocate(&defaultMat, sizeof(Material));
         material_.setBindingIndex(0);
@@ -355,6 +343,34 @@ struct App : public OpenGLApplication
         mountainModel_ = glm::mat4(1.0f);
         mountainModel_ = glm::translate(mountainModel_, glm::vec3(10.0f, -0.2f, -25.0f));
         mountainModel_ = glm::scale(mountainModel_, glm::vec3(10.0f, 10.0f, 10.0f));
+
+        signModel_ = glm::mat4(1.0f);
+        signModel_ = glm::translate(signModel_, glm::vec3(7.0f, 2.0f, -25.0f));
+        signModel_ = glm::scale(signModel_, glm::vec3(10.0f, 10.0f, 10.0f));
+
+        tetherPathModel_ = glm::mat4(1.0f);
+        tetherPathModel_ = glm::translate(tetherPathModel_, glm::vec3(10.0f, 0.0f, -25.0f));
+        tetherPathModel_ = glm::scale(tetherPathModel_, glm::vec3(10.0f, 10.0f, 10.0f));
+
+        // TODO: REMOVE
+        float angleDegrees = 180.0f;
+        tetherPathModel_ = glm::rotate(
+            tetherPathModel_,
+            glm::radians(angleDegrees),
+            glm::normalize(glm::vec3(0.0f, 1.0f, 1.0f))
+        );
+		// END TODO
+
+        tetherModel_ = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.0f, -25.0f));
+        tetherModel_ = glm::scale(tetherModel_, glm::vec3(10.0f, 10.0f, 10.0f));
+
+        // TODO: REMOVE
+        tetherModel_ = glm::rotate(
+            tetherModel_,
+            glm::radians(angleDegrees),
+            glm::vec3(0.0f, 1.0f, 1.0f)
+        );
+        // END TODO
     }
 
     void setLightingUniform()
@@ -528,7 +544,6 @@ struct App : public OpenGLApplication
 
     void drawMountain(glm::mat4& projView, glm::mat4& view)
     {
-        //mountainShader_.use();
 		mountainTexture_.use();
         
         glm::mat4 modelView = view * mountainModel_;
@@ -541,18 +556,9 @@ struct App : public OpenGLApplication
     {
         signTexture_.use();
 
-        glm::mat4 signModel = glm::mat4(1.0f);
-        signModel = glm::translate(signModel, glm::vec3(7.0f, 2.0f, -25.0f));
-        signModel = glm::scale(signModel, glm::vec3(10.0f, 10.0f, 10.0f));
-        //float angleDegrees = 180.0f;
-        //signModel = glm::rotate(
-        //    signModel,
-        //    glm::radians(angleDegrees),
-        //    glm::vec3(0.0f, 1.0f, 1.5f)
-        //);
-        glm::mat4 modelView = view * signModel;
-        glm::mat4 signMVP = projView * signModel;
-        celShadingShader_.setMatrices(signMVP, modelView, signModel);
+        glm::mat4 modelView = view * signModel_;
+        glm::mat4 signMVP = projView * signModel_;
+        celShadingShader_.setMatrices(signMVP, modelView, signModel_);
         sign_.draw();
     }
 
@@ -631,7 +637,7 @@ struct App : public OpenGLApplication
 
     void drawTetherPath(glm::mat4& projView, glm::mat4& view)
     {
-        glBindVertexArray(0);
+        tetherPathTexture_.use();
 
         glBindVertexArray(vaoCurve);
 
@@ -658,42 +664,22 @@ struct App : public OpenGLApplication
         
         celShadingShader_.setMatrices(curveMVP, curveView, curveModel);
 
-        //glDrawElements(GL_LINE_STRIP, (GLsizei)indicesCurve.size(), GL_UNSIGNED_INT, 0);
-
         glBindVertexArray(0);
 
-        glm::mat4 tetherPathModel = glm::mat4(1.0f);
-        tetherPathModel = glm::translate(tetherPathModel, glm::vec3(10.0f, 0.0f, -25.0f));
-        tetherPathModel = glm::scale(tetherPathModel, glm::vec3(10.0f, 10.0f, 10.0f));
+        glm::mat4 tetherPathMVP = projView * tetherPathModel_;
 
-        float angleDegrees = 180.0f;
-        tetherPathModel = glm::rotate(
-            tetherPathModel,
-            glm::radians(angleDegrees),
-            glm::normalize(glm::vec3(0.0f, 1.0f, 1.0f))
-        );
-
-        glm::mat4 tetherPathMVP = projView * tetherPathModel;
-
-        celShadingShader_.setMatrices(tetherPathMVP, view, tetherPathModel);
+        celShadingShader_.setMatrices(tetherPathMVP, view, tetherPathModel_);
 
         tetherPath_.draw();
     }
 
     void drawTethers(glm::mat4& projView, glm::mat4& view)
     {
-        //tetherTexture_.use();
-        glm::mat4 tetherModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.0f, -25.0f));
-        tetherModel = glm::scale(tetherModel, glm::vec3(10.0f, 10.0f, 10.0f));
-        float angleDegrees = 180.0f;
-        tetherModel = glm::rotate(
-            tetherModel,
-            glm::radians(angleDegrees),
-            glm::vec3(0.0f, 1.0f, 1.0f)
-        );
-        glm::mat4 modelView = view * tetherModel;
-        glm::mat4 tethersMVP = projView * tetherModel;
-        celShadingShader_.setMatrices(tethersMVP, modelView, tetherModel);
+        tetherTexture_.use();
+
+        glm::mat4 modelView = view * tetherModel_;
+        glm::mat4 tethersMVP = projView * tetherModel_;
+        celShadingShader_.setMatrices(tethersMVP, modelView, tetherModel_);
         tethers_.draw();
         glBindVertexArray(0);
     }
@@ -769,7 +755,6 @@ struct App : public OpenGLApplication
         ImGui::Begin("Scene Parameters");
 
 		// TODO: Add some cool parameters to tweak
-        ImGui::SliderInt("Bezier Number Of Points", (int*)&bezierNPoints, 0, 16);
         if (ImGui::Button("Animate Camera"))
         {
             isAnimatingCamera = true;
@@ -814,13 +799,6 @@ struct App : public OpenGLApplication
         }
         else {
             updateCameraInput();
-        }
-
-        bool hasNumberOfSidesChanged = bezierNPoints != oldBezierNPoints;
-        if (hasNumberOfSidesChanged)
-        {
-            oldBezierNPoints = bezierNPoints;
-            calculateCurveVertices(bezierNPoints);
         }
 
         updateCameraInput();
@@ -887,19 +865,15 @@ struct App : public OpenGLApplication
         setMaterial(mountainMat);
         drawMountain(projView, view);
 
-        tetherPathTexture_.use();
         setMaterial(tetherPathMat);
         drawTetherPath(projView, view);
 
-        tetherTexture_.use();
         setMaterial(tetherMat);
         drawTethers(projView, view);
 
-        celShadingShader_.use();
         setMaterial(signMat);
         drawSignText(projView, view);
 
-        celShadingShader_.use();
         setMaterial(signMat);
         drawSign(projView, view);
 
@@ -946,6 +920,9 @@ private:
     glm::mat4 crystalModel_;
     glm::mat4 mountainModel_;
 	glm::mat4 groundModel_;
+	glm::mat4 signModel_;
+	glm::mat4 tetherPathModel_;
+    glm::mat4 tetherModel_;
 
     struct {
         DirectionalLight dirLight;
@@ -972,15 +949,14 @@ private:
     std::vector<Vertex> curveVertices;
     std::vector<unsigned int> indicesCurve;
 
-    unsigned int bezierNPoints = 3;
-    unsigned int oldBezierNPoints = 0;
+    unsigned int bezierNPoints = 16;
 
     GLuint vaoParticles_;
 
     float totalTime;
     float timerParticles_;
 
-	vec3 crystalPosition = vec3(0.0f, 30.0f, -15.0f);
+	vec3 crystalPosition = vec3(10.0f, 30.0f, -25.0f);
     static const unsigned int MAX_PARTICLES_ = 32;
     unsigned int nParticles_;
 
