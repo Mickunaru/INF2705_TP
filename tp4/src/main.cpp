@@ -141,43 +141,43 @@ Material signMat =
     5.0f                      // Shininess
 };
 
-BezierCurve curves[5] =
-{
-    // Segment 1: Start to First Turn
+
+const BezierCurve curves[] = {
+
     {
-        glm::vec3(10.0f, 5.0f, -10.0f),   // Start Point (Above/Front of mountain)
-        glm::vec3(25.0f, 5.0f, -10.0f),   // Control Point 1
-        glm::vec3(30.0f, 8.0f, -25.0f),   // Control Point 2
-        glm::vec3(30.0f, 8.0f, -25.0f)    // End Point (Right side of mountain)
+        {  10.0f, 4.0f, -45.0f },
+        {   0.0f, 4.0f, -37.0f },
+        { -10.0f, 6.0f, -29.0f }, 
+        { -10.0f, 6.0f, -25.0f }  
     },
-    // Segment 2: Right Side to Back
+
     {
-        glm::vec3(30.0f, 8.0f, -25.0f),
-        glm::vec3(30.0f, 8.0f, -40.0f),
-        glm::vec3(20.0f, 4.0f, -45.0f),
-        glm::vec3(10.0f, 4.0f, -45.0f)    // Back of mountain
+        {  0.0f, 8.0f, -25.0f },
+        {  10.0f, 8.0f, -29.0f },
+        {  20.0f, 4.0f, -37.0f },
+        {  10.0f, 4.0f, -45.0f }
     },
-    // Segment 3: Back to Left Side
+
     {
-        glm::vec3(10.0f, 4.0f, -45.0f),
-        glm::vec3(0.0f, 4.0f, -45.0f),
-        glm::vec3(-10.0f, 6.0f, -40.0f),
-        glm::vec3(-10.0f, 6.0f, -25.0f)   // Left side of mountain
+        {  10.0f, 5.0f, -45.0f },
+        {  25.0f, 5.0f, -45.0f },
+        {  30.0f, 8.0f, -25.0f },
+        {  30.0f, 8.0f, -25.0f }
     },
-    // Segment 4: Left Side to Front
+
     {
-        glm::vec3(-10.0f, 6.0f, -25.0f),
-        glm::vec3(-10.0f, 6.0f, -15.0f),
-        glm::vec3(0.0f, 5.0f, -10.0f),
-        glm::vec3(10.0f, 5.0f, -10.0f)    // Connects back to start
+        {  30.0f, 8.0f, -25.0f },
+        {  30.0f, 8.0f, -29.0f },
+        {  20.0f, 4.0f, -37.0f },
+        {  10.0f, 4.0f, -45.0f }
     },
-    // Segment 5: Small Loop or Extension (Optional, keeps array size 5)
+
     {
-        glm::vec3(10.0f, 5.0f, -10.0f),
-        glm::vec3(15.0f, 8.0f, -5.0f),
-        glm::vec3(5.0f, 8.0f, -5.0f),
-        glm::vec3(10.0f, 5.0f, -10.0f)
-    }
+        {  10.0f, 4.0f, -45.0f },
+        { 20.0f, 4.0f, -37.0f },
+        {  20.0f, 4.0f, -37.0f },
+        {  10.0f, 4.0f, -45.0f }
+    },
 };
 
 
