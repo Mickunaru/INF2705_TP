@@ -66,14 +66,6 @@ struct SpotLight
     GLfloat padding[3];
 };
 
-struct BezierCurve
-{
-    glm::vec3 p0;
-    glm::vec3 c0;
-    glm::vec3 c1;
-    glm::vec3 p1;
-};
-
 struct Particle
 {
     glm::vec3 position;
@@ -140,46 +132,6 @@ Material signMat =
     {0.1f, 0.1f, 0.1f},       // Specular
     5.0f                      // Shininess
 };
-
-
-const BezierCurve curves[] = {
-
-    {
-        {  10.0f, 4.0f, -45.0f },
-        {   0.0f, 4.0f, -37.0f },
-        { -10.0f, 6.0f, -29.0f }, 
-        { -10.0f, 6.0f, -25.0f }  
-    },
-
-    {
-        {  0.0f, 8.0f, -25.0f },
-        {  10.0f, 8.0f, -29.0f },
-        {  20.0f, 4.0f, -37.0f },
-        {  10.0f, 4.0f, -45.0f }
-    },
-
-    {
-        {  10.0f, 5.0f, -45.0f },
-        {  25.0f, 5.0f, -45.0f },
-        {  30.0f, 8.0f, -25.0f },
-        {  30.0f, 8.0f, -25.0f }
-    },
-
-    {
-        {  30.0f, 8.0f, -25.0f },
-        {  30.0f, 8.0f, -29.0f },
-        {  20.0f, 4.0f, -37.0f },
-        {  10.0f, 4.0f, -45.0f }
-    },
-
-    {
-        {  10.0f, 4.0f, -45.0f },
-        { 20.0f, 4.0f, -37.0f },
-        {  20.0f, 4.0f, -37.0f },
-        {  10.0f, 4.0f, -45.0f }
-    },
-};
-
 
 struct App : public OpenGLApplication
 {
@@ -268,7 +220,6 @@ struct App : public OpenGLApplication
 
         loadModels();
         initStaticModelMatrices();
-        calculateCurveVertices(bezierNPoints);
 
         material_.allocate(&defaultMat, sizeof(Material));
         material_.setBindingIndex(0);
@@ -292,10 +243,6 @@ struct App : public OpenGLApplication
 
         particles_[0].setBindingIndex(0);
         particles_[1].setBindingIndex(1);
-
-        glGenVertexArrays(1, &vaoCurve);
-        glGenBuffers(1, &vboCurve);
-        glGenBuffers(1, &eboCurve);
 
 		initParticlesBuffers();
 	}
@@ -375,13 +322,11 @@ struct App : public OpenGLApplication
         CHECK_GL_ERROR;
 	}
 
-	// Appelée lorsque la fenêtre se ferme.
 	void onClose() override
 	{
 
 	}
 
-	// Appelée lors d'une touche de clavier.
 	void onKeyPress(const sf::Event::KeyPressed& key) override
 	{
 		using enum sf::Keyboard::Key;
@@ -476,7 +421,6 @@ struct App : public OpenGLApplication
         cameraPosition_ += positionOffset * glm::vec3(deltaTime_);
     }
     
-    // TODO: Add more models
     void loadModels()
     {
         skybox_.load("../models/skybox.ply");
@@ -540,95 +484,12 @@ struct App : public OpenGLApplication
         sign_.draw();
     }
 
-    void calculateCurveVertices(unsigned int nPoints)
-    {
-        curveVertices.clear();
-        indicesCurve.clear();
-
-        unsigned int currentIndex = 0;
-
-        for (unsigned int j = 0; j < 5; ++j)
-        {
-            BezierCurve curve = curves[j];
-            unsigned int start = (j == 0) ? 0 : 1;
-            for (unsigned int i = start; i <= nPoints + 1; ++i)
-            {
-                float t = static_cast<float>(i) / static_cast<float>(nPoints + 1);
-                float u = 1.0f - t;
-
-                float tt = t * t;
-                float uu = u * u;
-                float uuu = uu * u;
-                float ttt = tt * t;
-
-                glm::vec3 position =
-                    uuu * curve.p0 +      
-                    3.0f * uu * t * curve.c0 +
-                    3.0f * u * tt * curve.p1 + 
-                    ttt * curve.p1;
-
-                curveVertices.push_back({ position, glm::vec4(1.0f) });
-                indicesCurve.push_back(currentIndex++);
-            }
-        }
-    }
-
-    //void drawCurve(glm::mat4& projView, glm::mat4& view)
-    //{
-    //    glBindVertexArray(vaoCurve);
-
-    //    glBindBuffer(GL_ARRAY_BUFFER, vboCurve);
-    //    glBufferData(GL_ARRAY_BUFFER, curveVertices.size() * sizeof(Vertex), curveVertices.data(), GL_STATIC_DRAW);
-
-    //    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboCurve);
-    //    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesCurve.size() * sizeof(unsigned int), indicesCurve.data(), GL_STATIC_DRAW);
-
-    //    glEnableVertexAttribArray(0);
-    //    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-
-    //    glm::mat4 model = glm::mat4(1.0f);
-    //    glm::mat4 mvp = projView * model;
-    //    celShadingShader_.setMatrices(mvp, view, model);
-
-    //    glDrawElements(GL_LINE_STRIP, indicesCurve.size(), GL_UNSIGNED_INT, 0);
-    //    glBindVertexArray(0);
-    //}
-
     void drawTetherPath(glm::mat4& projView, glm::mat4& view)
     {
         tetherPathTexture_.use();
 
-        glBindVertexArray(vaoCurve);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vboCurve);
-        glBufferData(GL_ARRAY_BUFFER, curveVertices.size() * sizeof(Vertex), curveVertices.data(), GL_DYNAMIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboCurve);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesCurve.size() * sizeof(unsigned int), indicesCurve.data(), GL_DYNAMIC_DRAW);
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoords));
-
-        glm::mat4 curveModel = glm::mat4(1.0f);
-        curveModel = glm::translate(curveModel, glm::vec3(15.0f, 0.0f, -25.0f));
-
-        glm::mat4 curveView = view * curveModel;
-        glm::mat4 curveMVP = projView * curveModel;
-        
-        celShadingShader_.setMatrices(curveMVP, curveView, curveModel);
-
-        glBindVertexArray(0);
-
         glm::mat4 tetherPathMVP = projView * tetherPathModel_;
-
         celShadingShader_.setMatrices(tetherPathMVP, view, tetherPathModel_);
-
         tetherPath_.draw();
     }
 
@@ -713,52 +574,10 @@ struct App : public OpenGLApplication
         CHECK_GL_ERROR;
         ImGui::Begin("Scene Parameters");
 
-		// TODO: Add some cool parameters to tweak
-        if (ImGui::Button("Animate Camera"))
-        {
-            isAnimatingCamera = true;
-            cameraMode = 1;
-        }
         ImGui::SliderFloat("Light Rotation (deg)", &lightRotationDeg, 0.0f, 360.0f);
         ImGui::ColorEdit3("Light Color", (float*)&lightColor);
 
         ImGui::End();
-
-        if (isAnimatingCamera)
-        {
-            if (cameraAnimation < 5)
-            {
-                cameraAnimation += deltaTime_ / 3.0;
-
-                float progress = cameraAnimation / 5.0f;
-                unsigned int totalNPoints = (bezierNPoints + 1) * 5;
-                float tGlobal = progress * (totalNPoints - 1);
-                unsigned int idx = static_cast<unsigned int>(tGlobal);
-                idx = std::min(idx, totalNPoints - 2);
-                float t = tGlobal - idx;
-
-                glm::vec3 start = curveVertices[idx].position;
-                glm::vec3 end = curveVertices[idx + 1].position;
-
-                cameraPosition_ = glm::mix(start, end, t);
-
-                glm::vec3 diff = cameraPosition_;
-                cameraOrientation_.y = atan2(diff.x, diff.z);
-                cameraOrientation_.x = atan2(-diff.y, glm::length(glm::vec2(diff.x, diff.z)));
-            }
-            else
-            {
-                glm::vec3 diff = -cameraPosition_;
-                cameraOrientation_.y = M_PI + atan2(diff.z, diff.x);
-
-                cameraAnimation = 0.f;
-                isAnimatingCamera = false;
-                cameraMode = 0;
-            }
-        }
-        else {
-            updateCameraInput();
-        }
 
         updateCameraInput();
 
@@ -834,9 +653,6 @@ struct App : public OpenGLApplication
         setMaterial(signMat);
         drawSign(projView, view);
 
-        //setMaterial(bezierMat);
-        //drawCurve(projView, view);
-
         setMaterial(defaultMat);
 		drawGround(projView, view);
         drawCrystal(projView, view);
@@ -887,7 +703,6 @@ private:
     glm::vec3 cameraPosition_;
     glm::vec2 cameraOrientation_;
 
-    // Imgui var
     const char* const SCENE_NAMES[1] = {
         "Main Scene"
     };
@@ -897,14 +712,6 @@ private:
     bool isMouseMotionEnabled_;
 
     int cameraMode = 0;
-    float cameraAnimation = 0.f;
-    bool isAnimatingCamera = false;
-
-    GLuint vaoCurve, vboCurve, eboCurve;
-    std::vector<Vertex> curveVertices;
-    std::vector<unsigned int> indicesCurve;
-
-    unsigned int bezierNPoints = 16;
 
     GLuint vaoParticles_;
 
@@ -920,7 +727,6 @@ private:
     const float MAP_LENGTH = 100.0f;
     const float MAP_WIDTH = 100.0f;
 
-    // Params
 	float oldLightRotationDeg = 0.0f;
     float lightRotationDeg = 0.0f;
 
