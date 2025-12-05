@@ -246,15 +246,10 @@ struct App : public OpenGLApplication
         tetherTexture_.setFiltering(GL_LINEAR);
         tetherTexture_.enableMipmap();
 
-        signTexture_.load("../textures/sign.png");
+        signTexture_.load("../textures/signbg.png");
         signTexture_.setWrap(GL_REPEAT);
         signTexture_.setFiltering(GL_LINEAR);
         signTexture_.enableMipmap();
-
-        signTextTexture_.load("../textures/signbg.png");
-        signTextTexture_.setWrap(GL_REPEAT);
-        signTextTexture_.setFiltering(GL_LINEAR);
-        signTextTexture_.enableMipmap();
 
         groundTexture_.load("../textures/moon-ground.png");
         groundTexture_.setWrap(GL_REPEAT);
@@ -345,12 +340,8 @@ struct App : public OpenGLApplication
         mountainModel_ = glm::scale(mountainModel_, glm::vec3(10.0f, 10.0f, 10.0f));
 
         signModel_ = glm::mat4(1.0f);
-        signModel_ = glm::translate(signModel_, glm::vec3(7.0f, 2.0f, -25.0f));
+        signModel_ = glm::translate(signModel_, glm::vec3(5.0f, 2.0f, -27.0f));
         signModel_ = glm::scale(signModel_, glm::vec3(10.0f, 10.0f, 10.0f));
-
-        signTexModel_ = glm::mat4(1.0f);
-        signTexModel_ = glm::translate(signTexModel_, glm::vec3(7.0f, 2.0f, -25.0f));
-        signTexModel_ = glm::scale(signTexModel_, glm::vec3(10.0f, 10.0f, 10.0f));
 
         tetherPathModel_ = glm::mat4(1.0f);
         tetherPathModel_ = glm::translate(tetherPathModel_, glm::vec3(10.0f, 0.0f, -25.0f));
@@ -494,7 +485,6 @@ struct App : public OpenGLApplication
         tetherPath_.load("../models/path.ply");
         tethers_.load("../models/tethers.ply");
         sign_.load("../models/sign.ply");
-        signText_.load("../models/sign_text.ply");
         ground_.load(groundVertices, sizeof(groundVertices), groundElements, sizeof(groundElements));
     }
 
@@ -548,17 +538,6 @@ struct App : public OpenGLApplication
         glm::mat4 signMVP = projView * signModel_;
         celShadingShader_.setMatrices(signMVP, modelView, signModel_);
         sign_.draw();
-    }
-
-    void drawSignText(glm::mat4& projView, glm::mat4& view)
-    {
-        signTextTexture_.use();
-
-        glm::mat4 signModel = glm::mat4(1.0f);
-        glm::mat4 modelView = view * signTexModel_;
-        glm::mat4 signTexMVP = projView * signTexModel_;
-        celShadingShader_.setMatrices(modelView, modelView, signTexModel_);
-        signText_.draw();
     }
 
     void calculateCurveVertices(unsigned int nPoints)
@@ -851,8 +830,6 @@ struct App : public OpenGLApplication
         setMaterial(tetherMat);
         drawTethers(projView, view);
 
-        setMaterial(signMat);
-        drawSignText(projView, view);
 
         setMaterial(signMat);
         drawSign(projView, view);
@@ -880,7 +857,6 @@ private:
     Texture2D tetherPathTexture_;
     Texture2D tetherTexture_;
     Texture2D signTexture_;
-    Texture2D signTextTexture_;
 	Texture2D particleTexture_;
     TextureCubeMap skyboxTexture_;
 
@@ -891,7 +867,6 @@ private:
     Model tetherPath_;
     Model tethers_;
     Model sign_;
-    Model signText_;
 	Model ground_;
 
     UniformBuffer material_;
@@ -901,7 +876,6 @@ private:
     glm::mat4 mountainModel_;
 	glm::mat4 groundModel_;
 	glm::mat4 signModel_;
-	glm::mat4 signTexModel_;
 	glm::mat4 tetherPathModel_;
     glm::mat4 tetherModel_;
 
